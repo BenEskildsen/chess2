@@ -3,7 +3,6 @@ const {Button, Modal} = require('bens_ui_components');
 const Game = require('./Game.react');
 const {useEnhancedReducer} = require('bens_ui_components');
 const {rootReducer} = require('../reducers/rootReducer');
-const {setupSocket} = require('../clientToServer');
 const {useEffect, useState, useMemo} = React;
 // const Lobby = require('./Lobby.react');
 
@@ -14,16 +13,11 @@ function Main(props) {
   );
   window.getState = getState;
 
-  // mutliplayer
-  useEffect(() => {
-    setupSocket(dispatch);
-  }, []);
-
   let content = null;
   if (state.screen === 'LOBBY') {
     content = <Lobby dispatch={dispatch} />
   } else if (state.screen === 'GAME') {
-    content = <Game dispatch={dispatch} state={state} getState={getState} />
+    content = <Game dispatch={dispatch} state={getState()} getState={getState} />
   }
 
   return (

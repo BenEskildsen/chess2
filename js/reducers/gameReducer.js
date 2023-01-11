@@ -4,7 +4,7 @@ const {config} = require('../config');
 const {clamp, subtractWithDeficit} = require('bens_utils').math;
 const {
   getPieceByID, getPieceAtPosition,
-} = require('../selectors');
+} = require('../selectors/selectors');
 const {randomIn, normalIn, oneOf, weightedOneOf} = require('bens_utils').stochastic;
 const {dispatchToServer} = require('../clientToServer');
 
@@ -36,9 +36,16 @@ const gameReducer = (game, action) => {
       }
 
       pieceToMove.position = position;
-
+      moveHistory = [...game.moveHistory, action];
 
       return game;
+    }
+    case 'SET_LEGAL_MOVES': {
+      const {legalMoves} = action;
+      return {
+        ...game,
+        legalMoves,
+      };
     }
   }
   return game;
