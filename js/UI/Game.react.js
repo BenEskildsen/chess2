@@ -43,6 +43,7 @@ function Game(props) {
       <div
         style={{
           display: 'flex',
+          alignItems: 'center',
         }}
       >
         <div>
@@ -66,6 +67,11 @@ function Game(props) {
               dispatchToServer(action);
             }}
           />
+        </div>
+        <div>
+          &nbsp; White Score: {game.colorValues['white']}
+        </div><div>
+          &nbsp; Black Score: {game.colorValues['black']}
         </div>
       </div>
       <div

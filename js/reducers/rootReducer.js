@@ -65,6 +65,7 @@ const initGameState = () => {
     // ...regularBoard(),
     legalMoves: [],
     moveHistory: [],
+    colorValues: {black: 8, white: 8},
   };
 
   return game;

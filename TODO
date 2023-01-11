@@ -4,5 +4,8 @@
 
 
 - - - - - FEATURES - - - - -
+  - show total value of deployed pieces
+  - en passant
+  - add visit tracking
   - allow rotating the board for the black player
   - button to save board state --> go to full size board

@@ -21,6 +21,7 @@ const gameReducer = (game, action) => {
       const pieceAtPosition = getPieceAtPosition(game, position);
       if (pieceAtPosition && pieceAtPosition.id != id) {
         game = removePiece(game, pieceAtPosition);
+        game.colorValues[pieceAtPosition.color] -= config.pieceToValue[pieceAtPosition.type];
       }
 
       const pieceToMove = getPieceByID(game, id);
@@ -32,6 +33,7 @@ const gameReducer = (game, action) => {
           pieceToMove.color == 'black' && pieceToMove.position.y == 0
         ) {
           addPiece(game, pieceToMove.color, pieceToMove.type, pieceToMove.position);
+          game.colorValues[pieceToMove.color] += config.pieceToValue[pieceToMove.type];
         }
       }
 

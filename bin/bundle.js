@@ -60,7 +60,8 @@ function Game(props) {
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      display: 'flex'
+      display: 'flex',
+      alignItems: 'center'
     }
   }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Button, {
     label: "Restart",
@@ -88,7 +89,7 @@ function Game(props) {
       dispatch(action);
       dispatchToServer(action);
     }
-  }))), /*#__PURE__*/React.createElement("div", {
+  })), /*#__PURE__*/React.createElement("div", null, "\xA0 White Score: ", game.colorValues['white']), /*#__PURE__*/React.createElement("div", null, "\xA0 Black Score: ", game.colorValues['black'])), /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       justifyContent: 'center',
@@ -384,6 +385,16 @@ const config = {
       x: 7,
       y: 1
     }
+  },
+  pieceToValue: {
+    pawn: 1,
+    knight: 3,
+    bishop: 3,
+    rook: 5,
+    knishop: 7,
+    knook: 8,
+    queen: 9,
+    king: 4
   }
 };
 module.exports = {
@@ -445,6 +456,7 @@ const gameReducer = (game, action) => {
         const pieceAtPosition = getPieceAtPosition(game, position);
         if (pieceAtPosition && pieceAtPosition.id != id) {
           game = removePiece(game, pieceAtPosition);
+          game.colorValues[pieceAtPosition.color] -= config.pieceToValue[pieceAtPosition.type];
         }
         const pieceToMove = getPieceByID(game, id);
 
@@ -452,6 +464,7 @@ const gameReducer = (game, action) => {
         if (game.boardType == 'deployment') {
           if (pieceToMove.color == 'white' && pieceToMove.position.y == 11 || pieceToMove.color == 'black' && pieceToMove.position.y == 0) {
             addPiece(game, pieceToMove.color, pieceToMove.type, pieceToMove.position);
+            game.colorValues[pieceToMove.color] += config.pieceToValue[pieceToMove.type];
           }
         }
         pieceToMove.position = position;
@@ -604,7 +617,11 @@ const initGameState = () => {
     ...deploymentBoard(),
     // ...regularBoard(),
     legalMoves: [],
-    moveHistory: []
+    moveHistory: [],
+    colorValues: {
+      black: 8,
+      white: 8
+    }
   };
   return game;
 };
