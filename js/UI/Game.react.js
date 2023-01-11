@@ -8,7 +8,11 @@ const {
 } = require('bens_ui_components');
 const {
   getPieceByID, getPieceAtPosition,
-} = require('../selectors');
+} = require('../selectors/selectors');
+const {
+  getLegalMoves, isMoveInLegalMoves,
+} = require('../selectors/moves');
+const {dispatchToServer, setupSocket} = require('../clientToServer');
 const {config} = require('../config');
 const {useState, useMemo, useEffect, useReducer} = React;
 
@@ -16,53 +20,122 @@ function Game(props) {
   const {state, dispatch, getState} = props;
   const game = state.game;
 
+  // mutliplayer
+  useEffect(() => {
+    setupSocket(dispatch);
+  }, []);
 
-  // initializations
-  // useEffect(() => {
-  // }, []);
 
+  const background = useMemo(() => {
+    return game.boardType == 'deployment' ? <DeploymentBoard game={game} /> : null;
+  }, [game.boardType, game.legalMoves.length]);
 
   return (
     <div
       style={{
-        backgroundColor: 'lightgrey',
         display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
+        width: '100%',
         height: '100%',
+        backgroundColor: 'lightgrey',
+        flexDirection: 'column',
       }}
     >
-      <Board
-        background={game.boardType == 'deployment' ? <DeploymentBoard game={game} /> : null}
-        pixelSize={config.pixelSize}
-        gridSize={game.gridSize}
-        onPieceMove={(id, position) => {
-          dispatch({type: 'MOVE_PIECE', local: true, id, position});
+      <div
+        style={{
+          display: 'flex',
         }}
-        isMoveAllowed={(id, position) => {
-          const game = getState().game;
-          const piece = getPieceByID(game, id);
-          const pieceAtPosition = getPieceAtPosition(game, position);
+      >
+        <div>
+          <Button
+            label="Restart"
+            style={{height: 50}}
+            onClick={() => {
+              const action = {type: 'START', screen: 'GAME'};
+              dispatch(action);
+              dispatchToServer(action);
+            }}
+          />
+        </div>
+        <div>
+          <Button
+            label="Undo"
+            style={{height: 50, width: '100%'}}
+            onClick={() => {
+              const action = {type: 'UNDO'};
+              dispatch(action);
+              dispatchToServer(action);
+            }}
+          />
+        </div>
+      </div>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100%',
+        }}
+      >
+        <Board
+          background={background}
+          pixelSize={config.pixelSize}
+          gridSize={game.gridSize}
+          onPieceMove={(id, position) => {
+            dispatch({type: 'MOVE_PIECE', local: true, id, position});
+            dispatch({type: 'SET_LEGAL_MOVES', legalMoves: []});
+          }}
+          onMoveCancel={(id) => {
+            setTimeout(() => dispatch({type: 'SET_LEGAL_MOVES', legalMoves: []}));
+          }}
+          onPiecePickup={(id, position) => {
+            const game = getState().game;
+            const piece = getPieceByID(game, id);
+            dispatch({type: 'SET_LEGAL_MOVES', legalMoves: getLegalMoves(game, piece)});
+          }}
+          isMoveAllowed={(id, position) => {
+            const game = getState().game;
+            const piece = getPieceByID(game, id);
+            const pieceAtPosition = getPieceAtPosition(game, position);
 
-          if (pieceAtPosition != null && pieceAtPosition.color == piece.color) {
-            return false;
-          }
-          return true;
-        }}
-        pieces={game.pieces.map((p) => makePiece(game, p))}
-      />
+            if (pieceAtPosition != null && pieceAtPosition.color == piece.color) {
+              return false;
+            }
+
+            return isMoveInLegalMoves(getLegalMoves(game, piece), position);
+          }}
+          pieces={game.pieces.map((p) => makePiece(game, p))}
+        />
+      </div>
     </div>
   );
 }
 
 const DeploymentBoard = (props) => {
   const {game} = props;
+  const {legalMoves, boardSize, gridSize} = game;
 
   const pixelSize = {
     width: 2 * config.pixelSize.width / 3,
     height: 2 * config.pixelSize.height / 3,
   }
-  const gridSize = {width: 8, height: 8};
+
+  const moveIndicators = [];
+  const squareHeight = config.pixelSize.height / gridSize.height;
+  const squareWidth = config.pixelSize.width / gridSize.width;
+  for (const move of legalMoves) {
+    moveIndicators.push(<div
+      key={'move_' + move.x + ',' + move.y}
+      style={{
+        position: 'absolute', backgroundColor: 'gold',
+        borderRadius: '50%',
+        top: squareHeight * move.y + squareHeight / 4,
+        left: squareWidth * move.x + squareWidth / 4,
+        width: squareWidth / 2,
+        height: squareHeight / 2,
+        opacity: 0.75,
+      }}
+    />)
+  }
 
   return (
     <div
@@ -70,15 +143,16 @@ const DeploymentBoard = (props) => {
 
       }}
     >
-        <CheckerBackground
-          style={{
-            marginTop: 1, marginLeft: 1,
-            top: config.pixelSize.width / 6,
-            left: config.pixelSize.height / 6,
-          }}
-          color1="#6B8E23" color2="#FFFAF0"
-          pixelSize={pixelSize} gridSize={gridSize}
-        />
+      <CheckerBackground
+        style={{
+          marginTop: 1, marginLeft: 1,
+          top: config.pixelSize.height / 6,
+          left: config.pixelSize.width / 6,
+        }}
+        color1="#6B8E23" color2="#FFFAF0"
+        pixelSize={pixelSize} gridSize={boardSize}
+      />
+      {moveIndicators}
     </div>
   );
 }

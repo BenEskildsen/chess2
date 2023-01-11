@@ -28,7 +28,16 @@ const rootReducer = (state, action) => {
     case 'SET_MODAL':
     case 'DISMISS_MODAL':
       return modalReducer(state, action);
-    case 'REMOVE_PIECE':
+    case 'UNDO': {
+      // NOTE: the actual undoing of the move happens on the server side
+      state.game = {
+        ...initGameState(),
+        moveHistory: state.game.moveHistory,
+      };
+      state.game.moveHistory.pop();
+      return {...state};
+    }
+    case 'SET_LEGAL_MOVES':
     case 'MOVE_PIECE': {
       if (!state.game) return state;
       return {
@@ -54,6 +63,8 @@ const initGameState = () => {
   const game = {
     ...deploymentBoard(),
     // ...regularBoard(),
+    legalMoves: [],
+    moveHistory: [],
   };
 
   return game;
@@ -63,6 +74,9 @@ const deploymentBoard = () => {
   let pieceID = 1;
   return {
     boardType: 'deployment',
+    boardSize: {width: 8, height: 8},
+    gridToBoard: (gridPos) => {return ({x: gridPos.x - 2, y: gridPos.y - 2})},
+    boardToGrid: (boardPos) => {return ({x: boardPos.x + 2, y: boardPos.y + 2})},
     gridSize: {width: 12, height: 12},
     pieces: [
       {color: 'white', type: 'rook', position: {x: 0, y: 11}, id: pieceID++},
@@ -110,6 +124,9 @@ const regularBoard = () => {
   return {
     boardType: 'regular',
     gridSize: {width: 8, height: 8},
+    boardSize: {width: 8, height: 8},
+    gridToBoard: (gridPos) => gridPos,
+    boardToGrid: (boardPos) => boardPos,
     pieces: [
       {color: 'white', type: 'rook', position: {x: 0, y: 7}, id: pieceID++},
       {color: 'white', type: 'knight', position: {x: 1, y: 7}, id: pieceID++},

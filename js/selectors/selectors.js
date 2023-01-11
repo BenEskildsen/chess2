@@ -15,6 +15,7 @@ const getPieceAtPosition = (game, position) => {
   return null;
 }
 
+
 module.exports = {
   getPieceByID,
   getPieceAtPosition,

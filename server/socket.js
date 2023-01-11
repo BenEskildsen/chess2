@@ -15,6 +15,7 @@ const initSocketServer = (expressApp) => {
     [SESSION_ID]: {
       id: SESSION_ID,
       clients: [],
+      moveHistory: [],
     }
   };
   const socketClients = {};
@@ -49,24 +50,34 @@ const initIO = (io, sessions, socketClients, clientToSession) => {
     }
     const session = sessions[sessionID];
     session.clients.push(clientID);
-    // TODO: update the just-connected client with session data that may exist
-    // eg:
-    // socket.emit('receiveAction', {
-    //   type: 'ADD_LINES',
-    //   lines: session.lines,
-    // });
+
+    // update the just-connected client with session data that may exist
+    for (const action of session.moveHistory) {
+      socket.emit('receiveAction', action);
+    }
 
     socket.on('dispatch', (action) => {
       if (action == null) {
         return;
       }
       // console.log('client: ' + clientID + ' dispatches ' + action.type);
-      // TODO: implement pass-through actions from one client to the rest in the session
       switch (action.type) {
-        case 'ADD_LINES': {
-          const {lines} = action;
-          session.lines.push(...lines); // for actions that need to save state to the server
+        case 'MOVE_PIECE': {
+          session.moveHistory.push(action);
           emitToSession(sessions, socketClients, action, session.id, clientID);
+          break;
+        }
+        case 'START': {
+          session.moveHistory = [];
+          emitToSession(sessions, socketClients, action, session.id, clientID);
+          break;
+        }
+        case 'UNDO': {
+          session.moveHistory.pop();
+          emitToSession(sessions, socketClients, action, session.id, clientID);
+          for (const action of session.moveHistory) {
+            emitToSession(sessions, socketClients, action, session.id, clientID, true);
+          }
           break;
         }
         default:

@@ -1,5 +1,8 @@
 const config = {
-  pixelSize: {width: 700, height: 700},
+  pixelSize: {
+    width: Math.min(700, window.innerWidth),
+    height: Math.min(700, window.innerWidth),
+  },
 
   pieceToOffset: {
     'white_king': {x: 0, y: 0},
