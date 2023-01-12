@@ -1,4 +1,15 @@
 
+- - - - - PLAYTEST - - - - - -
+  - can fail to get color of deployed piece and crash the whole server?
+  - highlight the last move
+  - need castling
+  - button to toggle rules
+  - right click to highlight squares
+  - ticker for players joining/leaving
+  - play a sound when you make a move
+
+
+
 - - - - - FIX - - - - - -
   - sometimes placed piece doesn't snap
 

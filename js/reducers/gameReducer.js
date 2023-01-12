@@ -38,7 +38,7 @@ const gameReducer = (game, action) => {
       }
 
       pieceToMove.position = position;
-      moveHistory = [...game.moveHistory, action];
+      game.moveHistory = [...game.moveHistory, action];
 
       return game;
     }

@@ -139,13 +139,15 @@ function Game(props) {
   })));
 }
 const DeploymentBoard = props => {
+  var _moveHistory;
   const {
     game
   } = props;
   const {
     legalMoves,
     boardSize,
-    gridSize
+    gridSize,
+    moveHistory
   } = game;
   const pixelSize = {
     width: 2 * config.pixelSize.width / 3,
@@ -169,6 +171,8 @@ const DeploymentBoard = props => {
       }
     }));
   }
+  const move = (_moveHistory = moveHistory[moveHistory.length - 1]) === null || _moveHistory === void 0 ? void 0 : _moveHistory.position;
+  console.log(move);
   return /*#__PURE__*/React.createElement("div", {
     style: {}
   }, /*#__PURE__*/React.createElement(CheckerBackground, {
@@ -182,7 +186,18 @@ const DeploymentBoard = props => {
     color2: "#FFFAF0",
     pixelSize: pixelSize,
     gridSize: boardSize
-  }), moveIndicators);
+  }), move ? /*#__PURE__*/React.createElement("div", {
+    key: 'move_' + move.x + ',' + move.y,
+    style: {
+      position: 'absolute',
+      backgroundColor: 'red',
+      top: squareHeight * move.y + 1,
+      left: squareWidth * move.x + 1,
+      width: squareWidth,
+      height: squareHeight,
+      opacity: 0.5
+    }
+  }) : null, moveIndicators);
 };
 const makePiece = (game, piece) => {
   const pxWidth = config.pixelSize.width / game.gridSize.width;
@@ -468,7 +483,7 @@ const gameReducer = (game, action) => {
           }
         }
         pieceToMove.position = position;
-        moveHistory = [...game.moveHistory, action];
+        game.moveHistory = [...game.moveHistory, action];
         return game;
       }
     case 'SET_LEGAL_MOVES':

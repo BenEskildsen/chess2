@@ -118,7 +118,7 @@ function Game(props) {
 
 const DeploymentBoard = (props) => {
   const {game} = props;
-  const {legalMoves, boardSize, gridSize} = game;
+  const {legalMoves, boardSize, gridSize, moveHistory} = game;
 
   const pixelSize = {
     width: 2 * config.pixelSize.width / 3,
@@ -143,6 +143,9 @@ const DeploymentBoard = (props) => {
     />)
   }
 
+  const move = moveHistory[moveHistory.length - 1]?.position;
+  console.log(move);
+
   return (
     <div
       style={{
@@ -158,6 +161,18 @@ const DeploymentBoard = (props) => {
         color1="#6B8E23" color2="#FFFAF0"
         pixelSize={pixelSize} gridSize={boardSize}
       />
+      {move ? (
+        <div
+          key={'move_' + move.x + ',' + move.y}
+          style={{
+            position: 'absolute', backgroundColor: 'red',
+            top: squareHeight * move.y + 1,
+            left: squareWidth * move.x + 1,
+            width: squareWidth,
+            height: squareHeight,
+            opacity: 0.5,
+          }}
+        /> ) : null}
       {moveIndicators}
     </div>
   );
