@@ -49,7 +49,7 @@ function Game(props) {
     return game.boardType == 'deployment' ? /*#__PURE__*/React.createElement(DeploymentBoard, {
       game: game
     }) : null;
-  }, [game.boardType, game.legalMoves.length]);
+  }, [game.boardType, game.legalMoves.length, game.moveHistory]);
   return /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
@@ -471,19 +471,20 @@ const gameReducer = (game, action) => {
         const pieceAtPosition = getPieceAtPosition(game, position);
         if (pieceAtPosition && pieceAtPosition.id != id) {
           game = removePiece(game, pieceAtPosition);
-          game.colorValues[pieceAtPosition.color] -= config.pieceToValue[pieceAtPosition.type];
+          game.colorValues[pieceAtPosition.color] -= config.pieceToValue[pieceAtPosition === null || pieceAtPosition === void 0 ? void 0 : pieceAtPosition.type];
         }
         const pieceToMove = getPieceByID(game, id);
-
-        // check for deployment
-        if (game.boardType == 'deployment') {
-          if (pieceToMove.color == 'white' && pieceToMove.position.y == 11 || pieceToMove.color == 'black' && pieceToMove.position.y == 0) {
-            addPiece(game, pieceToMove.color, pieceToMove.type, pieceToMove.position);
-            game.colorValues[pieceToMove.color] += config.pieceToValue[pieceToMove.type];
+        if (pieceToMove) {
+          // check for deployment
+          if (game.boardType == 'deployment') {
+            if (pieceToMove != null && (pieceToMove.color == 'white' && pieceToMove.position.y == 11 || pieceToMove.color == 'black' && pieceToMove.position.y == 0)) {
+              addPiece(game, pieceToMove.color, pieceToMove.type, pieceToMove.position);
+              game.colorValues[pieceToMove.color] += config.pieceToValue[pieceToMove.type];
+            }
           }
+          pieceToMove.position = position;
+          game.moveHistory = [...game.moveHistory, action];
         }
-        pieceToMove.position = position;
-        game.moveHistory = [...game.moveHistory, action];
         return game;
       }
     case 'SET_LEGAL_MOVES':

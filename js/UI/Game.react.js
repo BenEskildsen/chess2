@@ -28,7 +28,7 @@ function Game(props) {
 
   const background = useMemo(() => {
     return game.boardType == 'deployment' ? <DeploymentBoard game={game} /> : null;
-  }, [game.boardType, game.legalMoves.length]);
+  }, [game.boardType, game.legalMoves.length, game.moveHistory]);
 
   return (
     <div
