@@ -59,10 +59,21 @@ function Game(props) {
         </div>
         <div>
           <Button
-            label="Undo"
+            label="Undo Move"
             style={{height: 50, width: '100%'}}
             onClick={() => {
               const action = {type: 'UNDO'};
+              dispatch(action);
+              dispatchToServer(action);
+            }}
+          />
+        </div>
+        <div>
+          <Button
+            label={game.useMoveRules ? "Turn Off Rules" : "Turn On Rules"}
+            style={{height: 50, width: '100%'}}
+            onClick={() => {
+              const action = {type: 'SET_USE_MOVE_RULES', useMoveRules: !game.useMoveRules};
               dispatch(action);
               dispatchToServer(action);
             }}
@@ -106,6 +117,8 @@ function Game(props) {
             if (pieceAtPosition != null && pieceAtPosition.color == piece.color) {
               return false;
             }
+
+            if (!game.useMoveRules) return true;
 
             return isMoveInLegalMoves(getLegalMoves(game, piece), position);
           }}
@@ -173,7 +186,7 @@ const DeploymentBoard = (props) => {
             opacity: 0.5,
           }}
         /> ) : null}
-      {moveIndicators}
+      {game.useMoveRules ? moveIndicators : null}
     </div>
   );
 }

@@ -11,6 +11,20 @@ const {dispatchToServer} = require('../clientToServer');
 
 const gameReducer = (game, action) => {
   switch (action.type) {
+    case 'SET': {
+      for (const prop in action) {
+        if (prop == 'SET') continue;
+        game[prop] = action[prop];
+      }
+      return {...game};
+    }
+    case 'SET_USE_MOVE_RULES': {
+      const {useMoveRules} = action;
+      return {
+        ...game,
+        useMoveRules,
+      };
+    }
     case 'MOVE_PIECE': {
       const {local, id, position} = action;
       if (local) {

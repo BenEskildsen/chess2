@@ -16,6 +16,7 @@ const initSocketServer = (expressApp) => {
       id: SESSION_ID,
       clients: [],
       moveHistory: [],
+      useMoveRules: true,
     }
   };
   const socketClients = {};
@@ -52,6 +53,7 @@ const initIO = (io, sessions, socketClients, clientToSession) => {
     session.clients.push(clientID);
 
     // update the just-connected client with session data that may exist
+    socket.emit('receiveAction', {type: 'SET_USE_MOVE_RULES', useMoveRules: session.useMoveRules});
     for (const action of session.moveHistory) {
       socket.emit('receiveAction', action);
     }
@@ -78,6 +80,12 @@ const initIO = (io, sessions, socketClients, clientToSession) => {
           for (const action of session.moveHistory) {
             emitToSession(sessions, socketClients, action, session.id, clientID, true);
           }
+          break;
+        }
+        case 'SET_USE_MOVE_RULES': {
+          const {useMoveRules} = action;
+          session.useMoveRules = useMoveRules;
+          emitToSession(sessions, socketClients, action, session.id, clientID);
           break;
         }
         default:

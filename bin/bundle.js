@@ -77,7 +77,7 @@ function Game(props) {
       dispatchToServer(action);
     }
   })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Button, {
-    label: "Undo",
+    label: "Undo Move",
     style: {
       height: 50,
       width: '100%'
@@ -85,6 +85,20 @@ function Game(props) {
     onClick: () => {
       const action = {
         type: 'UNDO'
+      };
+      dispatch(action);
+      dispatchToServer(action);
+    }
+  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Button, {
+    label: game.useMoveRules ? "Turn Off Rules" : "Turn On Rules",
+    style: {
+      height: 50,
+      width: '100%'
+    },
+    onClick: () => {
+      const action = {
+        type: 'SET_USE_MOVE_RULES',
+        useMoveRules: !game.useMoveRules
       };
       dispatch(action);
       dispatchToServer(action);
@@ -133,6 +147,7 @@ function Game(props) {
       if (pieceAtPosition != null && pieceAtPosition.color == piece.color) {
         return false;
       }
+      if (!game.useMoveRules) return true;
       return isMoveInLegalMoves(getLegalMoves(game, piece), position);
     },
     pieces: game.pieces.map(p => makePiece(game, p))
@@ -197,7 +212,7 @@ const DeploymentBoard = props => {
       height: squareHeight,
       opacity: 0.5
     }
-  }) : null, moveIndicators);
+  }) : null, game.useMoveRules ? moveIndicators : null);
 };
 const makePiece = (game, piece) => {
   const pxWidth = config.pixelSize.width / game.gridSize.width;
@@ -453,6 +468,26 @@ const {
 } = require('../clientToServer');
 const gameReducer = (game, action) => {
   switch (action.type) {
+    case 'SET':
+      {
+        for (const prop in action) {
+          if (prop == 'SET') continue;
+          game[prop] = action[prop];
+        }
+        return {
+          ...game
+        };
+      }
+    case 'SET_USE_MOVE_RULES':
+      {
+        const {
+          useMoveRules
+        } = action;
+        return {
+          ...game,
+          useMoveRules
+        };
+      }
     case 'MOVE_PIECE':
       {
         const {
@@ -607,7 +642,9 @@ const rootReducer = (state, action) => {
           ...state
         };
       }
+    case 'SET':
     case 'SET_LEGAL_MOVES':
+    case 'SET_USE_MOVE_RULES':
     case 'MOVE_PIECE':
       {
         if (!state.game) return state;
@@ -637,7 +674,8 @@ const initGameState = () => {
     colorValues: {
       black: 8,
       white: 8
-    }
+    },
+    useMoveRules: true
   };
   return game;
 };
@@ -793,135 +831,27 @@ const deploymentBoard = () => {
         y: 0
       },
       id: pieceID++
-    }, {
-      color: 'white',
-      type: 'pawn',
-      position: {
-        x: 2,
-        y: 8
-      },
-      id: pieceID++
-    }, {
-      color: 'white',
-      type: 'pawn',
-      position: {
-        x: 3,
-        y: 8
-      },
-      id: pieceID++
-    }, {
-      color: 'white',
-      type: 'pawn',
-      position: {
-        x: 4,
-        y: 8
-      },
-      id: pieceID++
-    }, {
-      color: 'white',
-      type: 'pawn',
-      position: {
-        x: 5,
-        y: 8
-      },
-      id: pieceID++
-    }, {
-      color: 'white',
-      type: 'pawn',
-      position: {
-        x: 6,
-        y: 8
-      },
-      id: pieceID++
-    }, {
-      color: 'white',
-      type: 'pawn',
-      position: {
-        x: 7,
-        y: 8
-      },
-      id: pieceID++
-    }, {
-      color: 'white',
-      type: 'pawn',
-      position: {
-        x: 8,
-        y: 8
-      },
-      id: pieceID++
-    }, {
-      color: 'white',
-      type: 'pawn',
-      position: {
-        x: 9,
-        y: 8
-      },
-      id: pieceID++
-    }, {
-      color: 'black',
-      type: 'pawn',
-      position: {
-        x: 2,
-        y: 3
-      },
-      id: pieceID++
-    }, {
-      color: 'black',
-      type: 'pawn',
-      position: {
-        x: 3,
-        y: 3
-      },
-      id: pieceID++
-    }, {
-      color: 'black',
-      type: 'pawn',
-      position: {
-        x: 4,
-        y: 3
-      },
-      id: pieceID++
-    }, {
-      color: 'black',
-      type: 'pawn',
-      position: {
-        x: 5,
-        y: 3
-      },
-      id: pieceID++
-    }, {
-      color: 'black',
-      type: 'pawn',
-      position: {
-        x: 6,
-        y: 3
-      },
-      id: pieceID++
-    }, {
-      color: 'black',
-      type: 'pawn',
-      position: {
-        x: 7,
-        y: 3
-      },
-      id: pieceID++
-    }, {
-      color: 'black',
-      type: 'pawn',
-      position: {
-        x: 8,
-        y: 3
-      },
-      id: pieceID++
-    }, {
-      color: 'black',
-      type: 'pawn',
-      position: {
-        x: 9,
-        y: 3
-      },
-      id: pieceID++
-    }],
+    }
+
+    // {color: 'white', type: 'pawn', position: {x: 2, y: 8}, id: pieceID++},
+    // {color: 'white', type: 'pawn', position: {x: 3, y: 8}, id: pieceID++},
+    // {color: 'white', type: 'pawn', position: {x: 4, y: 8}, id: pieceID++},
+    // {color: 'white', type: 'pawn', position: {x: 5, y: 8}, id: pieceID++},
+    // {color: 'white', type: 'pawn', position: {x: 6, y: 8}, id: pieceID++},
+    // {color: 'white', type: 'pawn', position: {x: 7, y: 8}, id: pieceID++},
+    // {color: 'white', type: 'pawn', position: {x: 8, y: 8}, id: pieceID++},
+    // {color: 'white', type: 'pawn', position: {x: 9, y: 8}, id: pieceID++},
+
+    // {color: 'black', type: 'pawn', position: {x: 2, y: 3}, id: pieceID++},
+    // {color: 'black', type: 'pawn', position: {x: 3, y: 3}, id: pieceID++},
+    // {color: 'black', type: 'pawn', position: {x: 4, y: 3}, id: pieceID++},
+    // {color: 'black', type: 'pawn', position: {x: 5, y: 3}, id: pieceID++},
+    // {color: 'black', type: 'pawn', position: {x: 6, y: 3}, id: pieceID++},
+    // {color: 'black', type: 'pawn', position: {x: 7, y: 3}, id: pieceID++},
+    // {color: 'black', type: 'pawn', position: {x: 8, y: 3}, id: pieceID++},
+    // {color: 'black', type: 'pawn', position: {x: 9, y: 3}, id: pieceID++},
+    ],
+
     nextPieceID: pieceID
   };
 };

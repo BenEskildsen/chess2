@@ -1,12 +1,8 @@
 
 - - - - - PLAYTEST - - - - - -
-  - previous position of moved piece tracked and highlighted
-  - right click to highlight squares
-  - ticker for players joining/leaving
 
 
 - - - - - BUTTONS - - - - -
-  - button to toggle movement rules
   - button to deploy pawns to second rank
     - allow deploying to first two ranks
     - no pawns by default
@@ -18,8 +14,15 @@
 
 
 - - - - - FEATURES - - - - -
-  - show total value of deployed pieces
-  - en passant
-  - add visit tracking
+  - ticker for players joining/leaving
   - allow rotating the board for the black player
+  - previous position of moved piece tracked and highlighted
+  - right click to highlight squares
+  - minimax
+    - implement copyBoard, getAllMoves, isCheckmate, isCheck functions
+    - button that runs minimax on next player's move
+
+
+- - - - - - LATER - - - - - - -
+  - add visit tracking
   - button to save board state --> go to full size board
