@@ -672,8 +672,8 @@ const initGameState = () => {
     legalMoves: [],
     moveHistory: [],
     colorValues: {
-      black: 8,
-      white: 8
+      black: 0,
+      white: 0
     },
     useMoveRules: true
   };
