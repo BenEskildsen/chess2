@@ -68,7 +68,7 @@ const initGameState = () => {
     legalMoves: [],
     moveHistory: [],
     prevPiecePosition: null, // location of the piece that just moved
-    colorValues: {black: 8, white: 8},
+    colorValues: {black: 0, white: 0},
     useMoveRules: true,
   };
 

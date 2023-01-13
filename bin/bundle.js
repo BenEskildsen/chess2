@@ -106,16 +106,6 @@ function Game(props) {
       dispatch(action);
       dispatchToServer(action);
     }
-  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Button, {
-    label: "Deploy Pawns",
-    style: {
-      height: 50,
-      width: '100%'
-    },
-    onClick: () => {
-      deployPawns(dispatch, getState, 'white');
-      deployPawns(dispatch, getState, 'black');
-    }
   })), /*#__PURE__*/React.createElement("div", null, "\xA0 White Score: ", game.colorValues['white']), /*#__PURE__*/React.createElement("div", null, "\xA0 Black Score: ", game.colorValues['black'])), /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
@@ -701,8 +691,8 @@ const initGameState = () => {
     prevPiecePosition: null,
     // location of the piece that just moved
     colorValues: {
-      black: 8,
-      white: 8
+      black: 0,
+      white: 0
     },
     useMoveRules: true
   };
@@ -1472,7 +1462,6 @@ const deployPawns = (dispatch, getState, color) => {
   for (let x = 0; x < game.boardSize.width; x++) {
     game = getState().game;
     const deploymentPawn = getDeploymentPiece(game, color, 'pawn');
-    console.log(deploymentPawn.id);
     dispatch({
       type: 'MOVE_PIECE',
       local: true,
