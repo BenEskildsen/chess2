@@ -41,6 +41,7 @@ const gameReducer = (game, action) => {
       const pieceToMove = getPieceByID(game, id);
 
       if (pieceToMove) {
+        game.prevPiecePosition = {...pieceToMove.position};
         // check for deployment
         if (game.boardType == 'deployment') {
           if (

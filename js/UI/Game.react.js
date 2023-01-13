@@ -14,6 +14,7 @@ const {
 } = require('../selectors/moves');
 const {dispatchToServer, setupSocket} = require('../clientToServer');
 const {config} = require('../config');
+const {deployPawns} = require('../thunks/deployPieces');
 const {useState, useMemo, useEffect, useReducer} = React;
 
 function Game(props) {
@@ -157,7 +158,7 @@ const DeploymentBoard = (props) => {
   }
 
   const move = moveHistory[moveHistory.length - 1]?.position;
-  console.log(move);
+  const prevPos = game.prevPiecePosition;
 
   return (
     <div
@@ -181,6 +182,18 @@ const DeploymentBoard = (props) => {
             position: 'absolute', backgroundColor: 'red',
             top: squareHeight * move.y + 1,
             left: squareWidth * move.x + 1,
+            width: squareWidth,
+            height: squareHeight,
+            opacity: 0.5,
+          }}
+        /> ) : null}
+      {prevPos ? (
+        <div
+          key={'prevPos_' + prevPos.x + ',' + prevPos.y}
+          style={{
+            position: 'absolute', backgroundColor: 'red',
+            top: squareHeight * prevPos.y + 1,
+            left: squareWidth * prevPos.x + 1,
             width: squareWidth,
             height: squareHeight,
             opacity: 0.5,
