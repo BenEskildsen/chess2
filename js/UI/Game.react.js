@@ -6,7 +6,7 @@ const {
   Board, SpriteSheet,
   CheckerBackground,
 } = require('bens_ui_components');
-const TopBar = require('./Topbar.react');
+const TopBar = require('./TopBar.react');
 const {
   getPieceByID, getPieceAtPosition,
 } = require('../selectors/selectors');
