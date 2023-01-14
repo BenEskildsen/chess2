@@ -12,7 +12,7 @@ const {
   SpriteSheet,
   CheckerBackground
 } = require('bens_ui_components');
-const TopBar = require('./Topbar.react');
+const TopBar = require('./TopBar.react');
 const {
   getPieceByID,
   getPieceAtPosition
@@ -225,7 +225,7 @@ function registerHotkeys(dispatch) {
   });
 }
 module.exports = Game;
-},{"../clientToServer":4,"../config":5,"../selectors/moves":11,"../selectors/selectors":12,"../thunks/deployPieces":13,"./Topbar.react":3,"bens_ui_components":36,"react":51}],2:[function(require,module,exports){
+},{"../clientToServer":4,"../config":5,"../selectors/moves":11,"../selectors/selectors":12,"../thunks/deployPieces":13,"./TopBar.react":3,"bens_ui_components":36,"react":51}],2:[function(require,module,exports){
 const React = require('react');
 const {
   Button,
