@@ -28,11 +28,11 @@ const config = {
     pawn: 1,
     knight: 3,
     bishop: 3,
-    rook: 5,
-    knishop: 7,
-    knook: 8,
-    queen: 9,
     king: 4,
+    rook: 5,
+    knook: 8,
+    knishop: 8,
+    queen: 9,
   },
 }
 

@@ -1,11 +1,18 @@
 
 - - - - - PLAYTEST - - - - - -
+  - mobile issues:
+    - too far down and too narrow
+    - show/hide deployment options doesn't work
+    - buttons overlap with score
 
 
 - - - - - BUTTONS - - - - -
-  - button to deploy pawns to second rank
-    - allow deploying to first two ranks
-  - button + slider to do a random deployment of certain score value
+  - button to auto-play AI moves with certain delay (for one/boths sides)
+    - AI bar?
+  - button that runs minimax on next player's move
+    - evaluateBoard function
+      - check, checkmate
+      - 1 > control of center, pawn structure, activity (nums moves for each side)
 
 
 - - - - - FIX - - - - - -
@@ -15,9 +22,6 @@
 - - - - - FEATURES - - - - -
   - ticker for players joining/leaving
   - allow rotating the board for the black player
-  - minimax
-    - implement copyBoard, getAllMoves, isCheckmate, isCheck functions
-    - button that runs minimax on next player's move
 
 
 - - - - - - LATER - - - - - - -

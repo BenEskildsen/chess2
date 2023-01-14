@@ -6,6 +6,7 @@ const {
   Board, SpriteSheet,
   CheckerBackground,
 } = require('bens_ui_components');
+const TopBar = require('./Topbar.react');
 const {
   getPieceByID, getPieceAtPosition,
 } = require('../selectors/selectors');
@@ -41,51 +42,7 @@ function Game(props) {
         flexDirection: 'column',
       }}
     >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-        }}
-      >
-        <div>
-          <Button
-            label="Restart"
-            style={{height: 50}}
-            onClick={() => {
-              const action = {type: 'START', screen: 'GAME'};
-              dispatch(action);
-              dispatchToServer(action);
-            }}
-          />
-        </div>
-        <div>
-          <Button
-            label="Undo Move"
-            style={{height: 50, width: '100%'}}
-            onClick={() => {
-              const action = {type: 'UNDO'};
-              dispatch(action);
-              dispatchToServer(action);
-            }}
-          />
-        </div>
-        <div>
-          <Button
-            label={game.useMoveRules ? "Turn Off Rules" : "Turn On Rules"}
-            style={{height: 50, width: '100%'}}
-            onClick={() => {
-              const action = {type: 'SET_USE_MOVE_RULES', useMoveRules: !game.useMoveRules};
-              dispatch(action);
-              dispatchToServer(action);
-            }}
-          />
-        </div>
-        <div>
-          &nbsp; White Score: {game.colorValues['white']}
-        </div><div>
-          &nbsp; Black Score: {game.colorValues['black']}
-        </div>
-      </div>
+      <TopBar {...props} />
       <div
         style={{
           display: 'flex',
@@ -99,7 +56,7 @@ function Game(props) {
           pixelSize={config.pixelSize}
           gridSize={game.gridSize}
           onPieceMove={(id, position) => {
-            dispatch({type: 'MOVE_PIECE', local: true, id, position});
+            dispatch({type: 'MOVE_PIECE', id, position});
             dispatch({type: 'SET_LEGAL_MOVES', legalMoves: []});
           }}
           onMoveCancel={(id) => {

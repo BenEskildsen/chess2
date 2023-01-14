@@ -10,11 +10,14 @@ const rootReducer = (state, action) => {
   switch (action.type) {
     case 'START': {
       const {screen} = action;
-      const game = initGameState();
+      const useMoveRules = state?.game?.useMoveRules;
       return {
         ...state,
         screen,
-        game,
+        game: {
+          ...initGameState(),
+          useMoveRules: useMoveRules != null ? useMoveRules : true,
+        }
       };
     }
     case 'SET_SCREEN': {
@@ -30,9 +33,11 @@ const rootReducer = (state, action) => {
       return modalReducer(state, action);
     case 'UNDO': {
       // NOTE: the actual undoing of the move happens on the server side
+      const useMoveRules = state?.game?.useMoveRules;
       state.game = {
         ...initGameState(),
         moveHistory: state.game.moveHistory,
+        useMoveRules: useMoveRules != null ? useMoveRules : true,
       };
       state.game.moveHistory.pop();
       return {...state};
@@ -40,6 +45,7 @@ const rootReducer = (state, action) => {
     case 'SET':
     case 'SET_LEGAL_MOVES':
     case 'SET_USE_MOVE_RULES':
+    case 'CREATE_PIECE':
     case 'MOVE_PIECE': {
       if (!state.game) return state;
       return {

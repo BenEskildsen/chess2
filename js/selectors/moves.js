@@ -17,9 +17,13 @@ function getLegalMoves(game, piece) {
   if (!insideBoard(game, position)) {
     for (let x = 2; x < boardSize.width + 2; x++) {
       if (color == 'black') {
-        legalMoves.push({x, y: 2});
+        legalMoves.push({x, y: type != 'pawn' ? 2 : 3});
+        // legalMoves.push({x, y: 2});
+        // legalMoves.push({x, y: 3});
       } else if (color == 'white') {
-        legalMoves.push({x, y: 9});
+        legalMoves.push({x, y: type != 'pawn' ? 9 : 8});
+        // legalMoves.push({x, y: 9});
+        // legalMoves.push({x, y: 10});
       }
     }
     return legalMoves

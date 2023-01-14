@@ -15,21 +15,7 @@ const getPieceAtPosition = (game, position) => {
   return null;
 }
 
-const getDeploymentPiece = (game, color, type) => {
-  let y = color == 'black' ? 0 : game.gridSize.height - 1;
-  for (let x = 0; x < game.gridSize.width; x++) {
-    const piece = getPieceAtPosition(game, {x, y});
-    console.log(piece, piece.id);
-    if (piece?.type == type) {
-      return piece;
-    }
-  }
-  return null;
-}
-
-
 module.exports = {
   getPieceByID,
   getPieceAtPosition,
-  getDeploymentPiece,
 }

@@ -64,6 +64,7 @@ const initIO = (io, sessions, socketClients, clientToSession) => {
       }
       // console.log('client: ' + clientID + ' dispatches ' + action.type);
       switch (action.type) {
+        case 'CREATE_PIECE':
         case 'MOVE_PIECE': {
           session.moveHistory.push(action);
           emitToSession(sessions, socketClients, action, session.id, clientID);

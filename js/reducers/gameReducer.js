@@ -25,10 +25,26 @@ const gameReducer = (game, action) => {
         useMoveRules,
       };
     }
+    case 'CREATE_PIECE': {
+      const {fromServer, pieceType, color, position} = action;
+
+      // don't create on top of something
+      const pieceAtPosition = getPieceAtPosition(game, position);
+      if (pieceAtPosition) return game;
+
+      if (!fromServer) {
+        dispatchToServer({...action, fromServer: true})
+      }
+
+      addPiece(game, color, pieceType, position);
+      game.colorValues[color] += config.pieceToValue[pieceType];
+
+      return {...game};
+    }
     case 'MOVE_PIECE': {
-      const {local, id, position} = action;
-      if (local) {
-        dispatchToServer({...action, local: false})
+      const {fromServer, id, position} = action;
+      if (!fromServer) {
+        dispatchToServer({...action, fromServer: true})
       }
 
       // check for capture

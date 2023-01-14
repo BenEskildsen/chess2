@@ -12,6 +12,7 @@ const {
   SpriteSheet,
   CheckerBackground
 } = require('bens_ui_components');
+const TopBar = require('./Topbar.react');
 const {
   getPieceByID,
   getPieceAtPosition
@@ -61,52 +62,7 @@ function Game(props) {
       backgroundColor: 'lightgrey',
       flexDirection: 'column'
     }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'flex',
-      alignItems: 'center'
-    }
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Button, {
-    label: "Restart",
-    style: {
-      height: 50
-    },
-    onClick: () => {
-      const action = {
-        type: 'START',
-        screen: 'GAME'
-      };
-      dispatch(action);
-      dispatchToServer(action);
-    }
-  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Button, {
-    label: "Undo Move",
-    style: {
-      height: 50,
-      width: '100%'
-    },
-    onClick: () => {
-      const action = {
-        type: 'UNDO'
-      };
-      dispatch(action);
-      dispatchToServer(action);
-    }
-  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Button, {
-    label: game.useMoveRules ? "Turn Off Rules" : "Turn On Rules",
-    style: {
-      height: 50,
-      width: '100%'
-    },
-    onClick: () => {
-      const action = {
-        type: 'SET_USE_MOVE_RULES',
-        useMoveRules: !game.useMoveRules
-      };
-      dispatch(action);
-      dispatchToServer(action);
-    }
-  })), /*#__PURE__*/React.createElement("div", null, "\xA0 White Score: ", game.colorValues['white']), /*#__PURE__*/React.createElement("div", null, "\xA0 Black Score: ", game.colorValues['black'])), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(TopBar, props), /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       justifyContent: 'center',
@@ -120,7 +76,6 @@ function Game(props) {
     onPieceMove: (id, position) => {
       dispatch({
         type: 'MOVE_PIECE',
-        local: true,
         id,
         position
       });
@@ -270,7 +225,7 @@ function registerHotkeys(dispatch) {
   });
 }
 module.exports = Game;
-},{"../clientToServer":3,"../config":4,"../selectors/moves":9,"../selectors/selectors":10,"../thunks/deployPieces":11,"bens_ui_components":34,"react":49}],2:[function(require,module,exports){
+},{"../clientToServer":4,"../config":5,"../selectors/moves":11,"../selectors/selectors":12,"../thunks/deployPieces":13,"./Topbar.react":3,"bens_ui_components":36,"react":51}],2:[function(require,module,exports){
 const React = require('react');
 const {
   Button,
@@ -334,7 +289,216 @@ function Lobby(props) {
   }));
 }
 module.exports = Main;
-},{"../reducers/rootReducer":8,"./Game.react":1,"bens_ui_components":34,"react":49}],3:[function(require,module,exports){
+},{"../reducers/rootReducer":9,"./Game.react":1,"bens_ui_components":36,"react":51}],3:[function(require,module,exports){
+const React = require('react');
+const {
+  oneOf
+} = require('bens_utils').stochastic;
+const {
+  Button,
+  InfoCard,
+  Divider,
+  Plot,
+  plotReducer,
+  Modal,
+  Indicator,
+  Board,
+  SpriteSheet,
+  CheckerBackground,
+  Slider
+} = require('bens_ui_components');
+const {
+  getPieceByID,
+  getPieceAtPosition
+} = require('../selectors/selectors');
+const {
+  getLegalMoves,
+  isMoveInLegalMoves
+} = require('../selectors/moves');
+const {
+  dispatchToServer,
+  setupSocket
+} = require('../clientToServer');
+const {
+  config
+} = require('../config');
+const {
+  deployPawns,
+  randomDeployment,
+  mirrorDeployment,
+  standardDeployment
+} = require('../thunks/deployPieces');
+const {
+  possibleMoves,
+  minimax,
+  getColorOfNextMove
+} = require('../selectors/minimax');
+const {
+  useState,
+  useMemo,
+  useEffect,
+  useReducer
+} = React;
+const TopBar = props => {
+  const {
+    state,
+    getState,
+    dispatch
+  } = props;
+  const {
+    game
+  } = getState();
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      alignItems: 'center'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center'
+    }
+  }, /*#__PURE__*/React.createElement(Button, {
+    label: "Restart",
+    style: {
+      height: 50
+    },
+    onClick: () => {
+      const action = {
+        type: 'START',
+        screen: 'GAME'
+      };
+      dispatch(action);
+      dispatchToServer(action);
+    }
+  }), /*#__PURE__*/React.createElement(Button, {
+    label: "Undo Move",
+    style: {
+      height: 50
+    },
+    onClick: () => {
+      const action = {
+        type: 'UNDO'
+      };
+      dispatch(action);
+      dispatchToServer(action);
+    }
+  }), /*#__PURE__*/React.createElement(Button, {
+    label: game.useMoveRules ? "Turn Off Rules" : "Turn On Rules",
+    style: {
+      height: 50
+    },
+    onClick: () => {
+      const action = {
+        type: 'SET_USE_MOVE_RULES',
+        useMoveRules: !game.useMoveRules
+      };
+      dispatch(action);
+      dispatchToServer(action);
+    }
+  }), /*#__PURE__*/React.createElement(Button, {
+    label: "AI Move",
+    style: {
+      height: 50
+    },
+    onClick: () => {
+      // random move:
+      // const moves = possibleMoves(game, []);
+      // dispatch(oneOf(moves));
+
+      const {
+        score,
+        move
+      } = minimax(game, [], 2, -Infinity, Infinity, true
+      // getColorOfNextMove(game, []) == 'white',
+      );
+
+      console.log(score, move);
+      dispatch({
+        ...move,
+        fromServer: false
+      });
+    }
+  }), /*#__PURE__*/React.createElement("div", null, "\xA0 White Score: ", game.colorValues['white']), /*#__PURE__*/React.createElement("div", null, "\xA0 Black Score: ", game.colorValues['black'])), /*#__PURE__*/React.createElement(DeploymentBar, props));
+};
+const DeploymentBar = props => {
+  const {
+    state,
+    getState,
+    dispatch
+  } = props;
+  const {
+    game
+  } = state;
+  const [showDeployment, setShowDeployment] = useState(false);
+  const [value, setValue] = useState(43);
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex'
+    }
+  }, /*#__PURE__*/React.createElement(Button, {
+    label: showDeployment ? '<' : '>',
+    style: {
+      height: 50
+    },
+    onClick: () => setShowDeployment(!showDeployment)
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: showDeployment ? 'inline-block' : 'none'
+    }
+  }, /*#__PURE__*/React.createElement(Button, {
+    label: "Pawns",
+    style: {
+      height: 50
+    },
+    onClick: () => {
+      deployPawns(dispatch, game, 'white');
+      deployPawns(dispatch, game, 'black');
+    }
+  }), /*#__PURE__*/React.createElement(Button, {
+    label: "Standard",
+    style: {
+      height: 50
+    },
+    onClick: () => {
+      deployPawns(dispatch, game, 'white');
+      deployPawns(dispatch, game, 'black');
+      standardDeployment(dispatch, game, 'white');
+      standardDeployment(dispatch, game, 'black');
+    }
+  }), /*#__PURE__*/React.createElement(Button, {
+    label: "Mirror White",
+    style: {
+      height: 50
+    },
+    onClick: () => {
+      mirrorDeployment(dispatch, game, 'white');
+    }
+  }), /*#__PURE__*/React.createElement(Button, {
+    label: "Random White",
+    style: {
+      height: 50
+    },
+    onClick: () => {
+      randomDeployment(dispatch, game, value, 'white');
+    }
+  }), /*#__PURE__*/React.createElement(Button, {
+    label: "Random Black",
+    style: {
+      height: 50
+    },
+    onClick: () => {
+      randomDeployment(dispatch, game, value, 'black');
+    }
+  }), /*#__PURE__*/React.createElement(Slider, {
+    min: 1,
+    max: 100,
+    value: value,
+    onChange: setValue,
+    label: "Total Allowed Piece Value Per Side"
+  })));
+};
+module.exports = TopBar;
+},{"../clientToServer":4,"../config":5,"../selectors/minimax":10,"../selectors/moves":11,"../selectors/selectors":12,"../thunks/deployPieces":13,"bens_ui_components":36,"bens_utils":43,"react":51}],4:[function(require,module,exports){
 /**
  * Socket.io functions
  */
@@ -358,7 +522,7 @@ module.exports = {
   dispatchToServer,
   setupSocket
 };
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 const config = {
   pixelSize: {
     width: Math.min(700, window.innerWidth),
@@ -434,17 +598,17 @@ const config = {
     pawn: 1,
     knight: 3,
     bishop: 3,
+    king: 4,
     rook: 5,
-    knishop: 7,
     knook: 8,
-    queen: 9,
-    king: 4
+    knishop: 8,
+    queen: 9
   }
 };
 module.exports = {
   config
 };
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 "use strict";
 
 var _Main = _interopRequireDefault(require("./UI/Main.react"));
@@ -457,7 +621,7 @@ function renderUI(root) {
 const root = _client.default.createRoot(document.getElementById('container'));
 renderUI(root);
 
-},{"./UI/Main.react":2,"react":49,"react-dom/client":45}],6:[function(require,module,exports){
+},{"./UI/Main.react":2,"react":51,"react-dom/client":47}],7:[function(require,module,exports){
 // @flow
 
 const {
@@ -502,17 +666,41 @@ const gameReducer = (game, action) => {
           useMoveRules
         };
       }
+    case 'CREATE_PIECE':
+      {
+        const {
+          fromServer,
+          pieceType,
+          color,
+          position
+        } = action;
+
+        // don't create on top of something
+        const pieceAtPosition = getPieceAtPosition(game, position);
+        if (pieceAtPosition) return game;
+        if (!fromServer) {
+          dispatchToServer({
+            ...action,
+            fromServer: true
+          });
+        }
+        addPiece(game, color, pieceType, position);
+        game.colorValues[color] += config.pieceToValue[pieceType];
+        return {
+          ...game
+        };
+      }
     case 'MOVE_PIECE':
       {
         const {
-          local,
+          fromServer,
           id,
           position
         } = action;
-        if (local) {
+        if (!fromServer) {
           dispatchToServer({
             ...action,
-            local: false
+            fromServer: true
           });
         }
 
@@ -578,7 +766,7 @@ const removePiece = (game, piece) => {
 module.exports = {
   gameReducer
 };
-},{"../clientToServer":3,"../config":4,"../selectors/selectors":10,"bens_utils":41}],7:[function(require,module,exports){
+},{"../clientToServer":4,"../config":5,"../selectors/selectors":12,"bens_utils":43}],8:[function(require,module,exports){
 const modalReducer = (state, action) => {
   switch (action.type) {
     case 'DISMISS_MODAL':
@@ -602,7 +790,7 @@ const modalReducer = (state, action) => {
 module.exports = {
   modalReducer
 };
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 const {
   gameReducer
 } = require('./gameReducer');
@@ -620,14 +808,18 @@ const rootReducer = (state, action) => {
   switch (action.type) {
     case 'START':
       {
+        var _state$game;
         const {
           screen
         } = action;
-        const game = initGameState();
+        const useMoveRules = state === null || state === void 0 ? void 0 : (_state$game = state.game) === null || _state$game === void 0 ? void 0 : _state$game.useMoveRules;
         return {
           ...state,
           screen,
-          game
+          game: {
+            ...initGameState(),
+            useMoveRules: useMoveRules != null ? useMoveRules : true
+          }
         };
       }
     case 'SET_SCREEN':
@@ -649,10 +841,13 @@ const rootReducer = (state, action) => {
       return modalReducer(state, action);
     case 'UNDO':
       {
+        var _state$game2;
         // NOTE: the actual undoing of the move happens on the server side
+        const useMoveRules = state === null || state === void 0 ? void 0 : (_state$game2 = state.game) === null || _state$game2 === void 0 ? void 0 : _state$game2.useMoveRules;
         state.game = {
           ...initGameState(),
-          moveHistory: state.game.moveHistory
+          moveHistory: state.game.moveHistory,
+          useMoveRules: useMoveRules != null ? useMoveRules : true
         };
         state.game.moveHistory.pop();
         return {
@@ -662,6 +857,7 @@ const rootReducer = (state, action) => {
     case 'SET':
     case 'SET_LEGAL_MOVES':
     case 'SET_USE_MOVE_RULES':
+    case 'CREATE_PIECE':
     case 'MOVE_PIECE':
       {
         if (!state.game) return state;
@@ -1151,7 +1347,149 @@ const regularBoard = () => {
 module.exports = {
   rootReducer
 };
-},{"../config":4,"./gameReducer":6,"./modalReducer":7,"bens_utils":41}],9:[function(require,module,exports){
+},{"../config":5,"./gameReducer":7,"./modalReducer":8,"bens_utils":43}],10:[function(require,module,exports){
+const {
+  getPieceAtPosition,
+  getPieceByID
+} = require('./selectors');
+const {
+  getLegalMoves,
+  insideBoard
+} = require('./moves');
+const {
+  deepCopy
+} = require('bens_utils').helpers;
+const {
+  gameReducer
+} = require('../reducers/gameReducer');
+function minimax(game, moveHistory, depth, alpha, beta, isMaximizingPlayer) {
+  // base case: reach the leaf node or maximum depth
+  if (depth === 0 || isGameOver(game, moveHistory)) {
+    return {
+      score: evaluate(game, moveHistory),
+      move: moveHistory[0]
+    };
+  }
+  if (isMaximizingPlayer) {
+    let bestValue = -Infinity;
+    let bestMove = null;
+    for (let move of possibleMoves(game, moveHistory)) {
+      const result = minimax(game, [...moveHistory, move], depth - 1, alpha, beta, false);
+      if (result.score > bestValue) {
+        bestValue = result.score;
+        bestMove = result.move;
+      } else if (result.score == bestValue && Math.random() < 0.6) {
+        bestValue = result.score;
+        bestMove = result.move;
+      }
+      alpha = Math.max(alpha, bestValue);
+      if (beta <= alpha) {
+        break;
+      }
+    }
+    return {
+      score: bestValue,
+      move: bestMove
+    };
+  } else {
+    let bestValue = Infinity;
+    let bestMove = null;
+    for (let move of possibleMoves(game, moveHistory)) {
+      const result = minimax(game, [...moveHistory, move], depth - 1, alpha, beta, true);
+      if (result.score < bestValue) {
+        bestValue = result.score;
+        bestMove = result.move;
+      } else if (result.score == bestValue && Math.random() < 0.6) {
+        bestValue = result.score;
+        bestMove = result.move;
+      }
+      beta = Math.min(beta, bestValue);
+      if (beta <= alpha) {
+        break;
+      }
+    }
+    return {
+      score: bestValue,
+      move: bestMove
+    };
+  }
+}
+const evaluate = (game, moveHistory) => {
+  const gameCopy = applyMoves(game, moveHistory);
+  let score = 0;
+  // lost:
+
+  // material:
+  score += gameCopy.colorValues.white - gameCopy.colorValues.black;
+
+  // activity:
+
+  return score;
+};
+const isGameOver = (game, moveHistory) => {
+  return false;
+};
+const possibleMoves = (game, moveHistory) => {
+  // which color is moving
+  let color = 'white';
+  let gameCopy = game;
+  if (moveHistory.length > 0) {
+    const lastMovedPiece = getPieceByID(game, moveHistory[moveHistory.length - 1].id);
+    if (lastMovedPiece.color == 'white') {
+      color = 'black';
+    }
+    gameCopy = applyMoves(game, moveHistory);
+  } else if (game.moveHistory.length > 0) {
+    const lastMovedPiece = getPieceByID(game, game.moveHistory[game.moveHistory.length - 1].id);
+    if (lastMovedPiece.color == 'white') {
+      color = 'black';
+    }
+  }
+  let allPossibleMoves = [];
+  for (const piece of gameCopy.pieces) {
+    if (piece.color != color) continue;
+    if (!insideBoard(gameCopy, piece.position)) continue;
+    allPossibleMoves = allPossibleMoves.concat(getLegalMoves(gameCopy, piece).map(position => {
+      return {
+        type: 'MOVE_PIECE',
+        id: piece.id,
+        position,
+        fromServer: true
+      };
+    }));
+  }
+  return allPossibleMoves;
+};
+const applyMoves = (game, moveHistory) => {
+  let gameCopy = deepCopy(game);
+  for (const move of moveHistory) {
+    gameCopy = gameReducer(gameCopy, move);
+  }
+  return gameCopy;
+};
+const getColorOfNextMove = (game, moveHistory) => {
+  // which color is moving
+  let color = 'white';
+  let gameCopy = game;
+  if (moveHistory.length > 0) {
+    const lastMovedPiece = getPieceByID(game, moveHistory[moveHistory.length - 1].id);
+    if (lastMovedPiece.color == 'white') {
+      color = 'black';
+    }
+  } else if (game.moveHistory.length > 0) {
+    const lastMovedPiece = getPieceByID(game, game.moveHistory[game.moveHistory.length - 1].id);
+    if (lastMovedPiece.color == 'white') {
+      color = 'black';
+    }
+  }
+  return color;
+};
+module.exports = {
+  minimax,
+  possibleMoves,
+  getColorOfNextMove
+};
+},{"../reducers/gameReducer":7,"./moves":11,"./selectors":12,"bens_utils":43}],11:[function(require,module,exports){
 const {
   equals
 } = require('bens_utils').vectors;
@@ -1181,15 +1519,20 @@ function getLegalMoves(game, piece) {
       if (color == 'black') {
         legalMoves.push({
           x,
-          y: 2
+          y: type != 'pawn' ? 2 : 3
         });
+        // legalMoves.push({x, y: 2});
+        // legalMoves.push({x, y: 3});
       } else if (color == 'white') {
         legalMoves.push({
           x,
-          y: 9
+          y: type != 'pawn' ? 9 : 8
         });
+        // legalMoves.push({x, y: 9});
+        // legalMoves.push({x, y: 10});
       }
     }
+
     return legalMoves.filter(pos => {
       var _getPieceAtPosition;
       return ((_getPieceAtPosition = getPieceAtPosition(game, pos)) === null || _getPieceAtPosition === void 0 ? void 0 : _getPieceAtPosition.color) != color;
@@ -1417,7 +1760,7 @@ module.exports = {
   getLegalMoves,
   insideBoard
 };
-},{"./selectors":10,"bens_utils":41}],10:[function(require,module,exports){
+},{"./selectors":12,"bens_utils":43}],12:[function(require,module,exports){
 const {
   equals
 } = require('bens_utils').vectors;
@@ -1433,39 +1776,29 @@ const getPieceAtPosition = (game, position) => {
   }
   return null;
 };
-const getDeploymentPiece = (game, color, type) => {
-  let y = color == 'black' ? 0 : game.gridSize.height - 1;
-  for (let x = 0; x < game.gridSize.width; x++) {
-    const piece = getPieceAtPosition(game, {
-      x,
-      y
-    });
-    console.log(piece, piece.id);
-    if ((piece === null || piece === void 0 ? void 0 : piece.type) == type) {
-      return piece;
-    }
-  }
-  return null;
-};
 module.exports = {
   getPieceByID,
-  getPieceAtPosition,
-  getDeploymentPiece
+  getPieceAtPosition
 };
-},{"bens_utils":41}],11:[function(require,module,exports){
+},{"bens_utils":43}],13:[function(require,module,exports){
 const {
-  getDeploymentPiece
+  oneOf,
+  weightedOneOf
+} = require('bens_utils').stochastic;
+const {
+  pieceToValue
+} = require('../config').config;
+const {
+  getPieceAtPosition
 } = require('../selectors/selectors');
-const deployPawns = (dispatch, getState, color) => {
-  let game = getState().game;
-  let y = color == 'black' ? 1 : 6;
+const deployPawns = (dispatch, game, color) => {
+  const y = color == 'black' ? 1 : 6;
   for (let x = 0; x < game.boardSize.width; x++) {
     game = getState().game;
-    const deploymentPawn = getDeploymentPiece(game, color, 'pawn');
     dispatch({
-      type: 'MOVE_PIECE',
-      local: true,
-      id: deploymentPawn.id,
+      type: 'CREATE_PIECE',
+      color,
+      pieceType: 'pawn',
       position: game.boardToGrid({
         x,
         y
@@ -1473,10 +1806,189 @@ const deployPawns = (dispatch, getState, color) => {
     });
   }
 };
-module.exports = {
-  deployPawns
+const standardDeployment = (dispatch, game, color) => {
+  const y = color == 'black' ? 0 : 7;
+  dispatch({
+    type: 'CREATE_PIECE',
+    color,
+    pieceType: 'rook',
+    position: game.boardToGrid({
+      x: 0,
+      y
+    })
+  });
+  dispatch({
+    type: 'CREATE_PIECE',
+    color,
+    pieceType: 'knight',
+    position: game.boardToGrid({
+      x: 1,
+      y
+    })
+  });
+  dispatch({
+    type: 'CREATE_PIECE',
+    color,
+    pieceType: 'bishop',
+    position: game.boardToGrid({
+      x: 2,
+      y
+    })
+  });
+  dispatch({
+    type: 'CREATE_PIECE',
+    color,
+    pieceType: 'queen',
+    position: game.boardToGrid({
+      x: 3,
+      y
+    })
+  });
+  dispatch({
+    type: 'CREATE_PIECE',
+    color,
+    pieceType: 'king',
+    position: game.boardToGrid({
+      x: 4,
+      y
+    })
+  });
+  dispatch({
+    type: 'CREATE_PIECE',
+    color,
+    pieceType: 'bishop',
+    position: game.boardToGrid({
+      x: 5,
+      y
+    })
+  });
+  dispatch({
+    type: 'CREATE_PIECE',
+    color,
+    pieceType: 'knight',
+    position: game.boardToGrid({
+      x: 6,
+      y
+    })
+  });
+  dispatch({
+    type: 'CREATE_PIECE',
+    color,
+    pieceType: 'rook',
+    position: game.boardToGrid({
+      x: 7,
+      y
+    })
+  });
 };
-},{"../selectors/selectors":10}],12:[function(require,module,exports){
+const randomDeployment = (dispatch, game, value, color) => {
+  if (!color) {
+    randomDeploymentByColor(dispatch, game, value, 'white');
+    mirrorDeployment(dispatch, game, 'white');
+  }
+  randomDeploymentByColor(dispatch, game, value, color);
+};
+const randomDeploymentByColor = (dispatch, game, value, color) => {
+  let valueRemaining = value - game.colorValues[color];
+
+  // 2nd rank:
+  let y = color == 'white' ? 6 : 1;
+  for (let x = 0; x < game.boardSize.width; x++) {
+    if (getPieceAtPosition(game, game.boardToGrid({
+      x,
+      y
+    }))) continue;
+    const pieceType = oneOf(['pawn', 'pawn', 'pawn', 'pawn', 'knight', 'bishop']);
+    valueRemaining -= pieceToValue[pieceType];
+    if (valueRemaining < 0) break;
+    dispatch({
+      type: 'CREATE_PIECE',
+      color,
+      pieceType,
+      position: game.boardToGrid({
+        x,
+        y
+      })
+    });
+  }
+
+  // back rank:
+  y = color == 'white' ? 7 : 0;
+  let placedKing = false;
+  for (let x = 0; x < game.boardSize.width; x++) {
+    if (getPieceAtPosition(game, game.boardToGrid({
+      x,
+      y
+    }))) continue;
+    const pieceType = choosePiece(valueRemaining, placedKing);
+    if (pieceType == 'king') placedKing = true;
+    valueRemaining -= pieceToValue[pieceType];
+    if (valueRemaining < 0) break;
+    dispatch({
+      type: 'CREATE_PIECE',
+      color,
+      pieceType,
+      position: game.boardToGrid({
+        x,
+        y
+      })
+    });
+  }
+};
+const choosePiece = (valueRemaining, placedKing) => {
+  let possiblePieces = [];
+  switch (valueRemaining) {
+    case 1:
+    case 2:
+      possiblePieces.push('pawn');
+      break;
+    case 3:
+      possiblePieces = possiblePieces.concat(['knight', 'knight', 'bishop']);
+      break;
+    case 4:
+      possiblePieces = possiblePieces.concat(['knight', 'bishop', 'pawn', 'king']);
+      break;
+    case 5:
+    case 6:
+    case 7:
+      possiblePieces = possiblePieces.concat(['knight', 'bishop', 'rook', 'king']);
+      break;
+    case 8:
+      possiblePieces = possiblePieces.concat(['knight', 'bishop', 'rook', 'king', 'knishop', 'knook']);
+      break;
+    default:
+      possiblePieces = possiblePieces.concat(['knight', 'bishop', 'rook', 'king', 'knishop', 'knook', 'queen']);
+      break;
+  }
+  if (valueRemaining < 14 && !placedKing) {
+    possiblePieces = ['king'];
+  }
+  possiblePieces = possiblePieces.filter(t => !placedKing || t != 'king');
+  const weights = possiblePieces.map(p => pieceToValue[p]);
+  return weightedOneOf(possiblePieces, weights);
+};
+const mirrorDeployment = (dispatch, game, color) => {
+  for (const piece of game.pieces) {
+    if (piece.color != color) continue;
+    dispatch({
+      type: 'CREATE_PIECE',
+      color: color == 'white' ? 'black' : 'white',
+      pieceType: piece.type,
+      position: {
+        x: piece.position.x,
+        y: game.gridSize.height - piece.position.y - 1
+      }
+    });
+  }
+};
+module.exports = {
+  deployPawns,
+  randomDeployment,
+  randomDeploymentByColor,
+  mirrorDeployment,
+  standardDeployment
+};
+},{"../config":5,"../selectors/selectors":12,"bens_utils":43}],14:[function(require,module,exports){
 const React = require('react');
 const Button = require('./Button.react');
 const {
@@ -1549,7 +2061,7 @@ const AudioWidget = props => {
   }));
 };
 module.exports = AudioWidget;
-},{"./Button.react":14,"react":49}],13:[function(require,module,exports){
+},{"./Button.react":16,"react":51}],15:[function(require,module,exports){
 function _extends() { _extends = Object.assign ? Object.assign.bind() : function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; }; return _extends.apply(this, arguments); }
 const React = require('react');
 const CheckerBackground = require('./CheckerBackground.react.js');
@@ -1674,7 +2186,7 @@ const Piece = props => {
   }, props.sprite);
 };
 module.exports = Board;
-},{"./CheckerBackground.react.js":17,"./DragArea.react.js":19,"react":49}],14:[function(require,module,exports){
+},{"./CheckerBackground.react.js":19,"./DragArea.react.js":21,"react":51}],16:[function(require,module,exports){
 const React = require('react');
 const {
   useState,
@@ -1748,7 +2260,7 @@ function Button(props) {
   }, props.label);
 }
 module.exports = Button;
-},{"react":49}],15:[function(require,module,exports){
+},{"react":51}],17:[function(require,module,exports){
 const React = require('react');
 const {
   useEffect,
@@ -1818,7 +2330,7 @@ function Canvas(props) {
   }));
 }
 module.exports = React.memo(Canvas);
-},{"react":49}],16:[function(require,module,exports){
+},{"react":51}],18:[function(require,module,exports){
 const React = require('react');
 
 /**
@@ -1851,7 +2363,7 @@ function Checkbox(props) {
   }
 }
 module.exports = Checkbox;
-},{"react":49}],17:[function(require,module,exports){
+},{"react":51}],19:[function(require,module,exports){
 const React = require('react');
 
 /**
@@ -1899,7 +2411,7 @@ const CheckerboardBackground = props => {
   }, squares);
 };
 module.exports = CheckerboardBackground;
-},{"react":49}],18:[function(require,module,exports){
+},{"react":51}],20:[function(require,module,exports){
 const React = require('react');
 function Divider(props) {
   const {
@@ -1915,7 +2427,7 @@ function Divider(props) {
   });
 }
 module.exports = Divider;
-},{"react":49}],19:[function(require,module,exports){
+},{"react":51}],21:[function(require,module,exports){
 const React = require('react');
 const {
   useMouseHandler,
@@ -2163,7 +2675,7 @@ const clampToArea = (dragAreaID, pixel, style) => {
   };
 };
 module.exports = DragArea;
-},{"./hooks":32,"bens_utils":41,"react":49}],20:[function(require,module,exports){
+},{"./hooks":34,"bens_utils":43,"react":51}],22:[function(require,module,exports){
 const React = require('react');
 
 /**
@@ -2196,7 +2708,7 @@ const Dropdown = function (props) {
   }, optionTags);
 };
 module.exports = Dropdown;
-},{"react":49}],21:[function(require,module,exports){
+},{"react":51}],23:[function(require,module,exports){
 const React = require('react');
 const {
   useEffect,
@@ -2242,7 +2754,7 @@ const usePrevious = value => {
   return ref.current;
 };
 module.exports = Indicator;
-},{"react":49}],22:[function(require,module,exports){
+},{"react":51}],24:[function(require,module,exports){
 const React = require('react');
 const InfoCard = props => {
   const overrideStyle = props.style || {};
@@ -2266,7 +2778,7 @@ const InfoCard = props => {
   }, props.children);
 };
 module.exports = InfoCard;
-},{"react":49}],23:[function(require,module,exports){
+},{"react":51}],25:[function(require,module,exports){
 const React = require('react');
 const Button = require('./Button.react');
 const Divider = require('./Divider.react');
@@ -2342,7 +2854,7 @@ function Modal(props) {
   }, buttonHTML)));
 }
 module.exports = Modal;
-},{"./Button.react":14,"./Divider.react":18,"react":49}],24:[function(require,module,exports){
+},{"./Button.react":16,"./Divider.react":20,"react":51}],26:[function(require,module,exports){
 const React = require('react');
 const {
   useState,
@@ -2424,7 +2936,7 @@ const submitValue = (onChange, nextVal, onlyInt) => {
   }
 };
 module.exports = NumberField;
-},{"react":49}],25:[function(require,module,exports){
+},{"react":51}],27:[function(require,module,exports){
 function _extends() { _extends = Object.assign ? Object.assign.bind() : function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; }; return _extends.apply(this, arguments); }
 /**
  * See ~/Code/teaching/clusters for an example of how to use the plot
@@ -2712,7 +3224,7 @@ const PlotWatcher = props => {
   }));
 };
 module.exports = PlotWatcher;
-},{"./Button.react":14,"./Canvas.react":15,"react":49}],26:[function(require,module,exports){
+},{"./Button.react":16,"./Canvas.react":17,"react":51}],28:[function(require,module,exports){
 const React = require('react');
 const Button = require('./Button.react');
 const Modal = require('./Modal.react');
@@ -2795,7 +3307,7 @@ const quitGameModal = dispatch => {
   });
 };
 module.exports = QuitButton;
-},{"./Button.react":14,"./Modal.react":23,"bens_utils":41,"react":49}],27:[function(require,module,exports){
+},{"./Button.react":16,"./Modal.react":25,"bens_utils":43,"react":51}],29:[function(require,module,exports){
 const React = require('react');
 
 // props:
@@ -2822,7 +3334,7 @@ class RadioPicker extends React.Component {
   }
 }
 module.exports = RadioPicker;
-},{"react":49}],28:[function(require,module,exports){
+},{"react":51}],30:[function(require,module,exports){
 const React = require('react');
 const NumberField = require('./NumberField.react');
 const {
@@ -2892,7 +3404,7 @@ function Slider(props) {
   }), props.noOriginalValue ? null : "(" + originalValue + ")"));
 }
 module.exports = Slider;
-},{"./NumberField.react":24,"react":49}],29:[function(require,module,exports){
+},{"./NumberField.react":26,"react":51}],31:[function(require,module,exports){
 const React = require('react');
 
 /**
@@ -2936,7 +3448,7 @@ const SpriteSheet = props => {
   }));
 };
 module.exports = SpriteSheet;
-},{"react":49}],30:[function(require,module,exports){
+},{"react":51}],32:[function(require,module,exports){
 const React = require('react');
 const Button = require('./Button.react');
 const Dropdown = require('./Dropdown.react');
@@ -3123,7 +3635,7 @@ function Table(props) {
   }, props.hideNumRows ? null : /*#__PURE__*/React.createElement("span", null, "Total Rows: ", rows.length, " Rows Displayed: ", filteredRows.length), /*#__PURE__*/React.createElement("table", null, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, headers)), /*#__PURE__*/React.createElement("tbody", null, rowHTML)));
 }
 module.exports = Table;
-},{"./Button.react":14,"./Dropdown.react":20,"react":49}],31:[function(require,module,exports){
+},{"./Button.react":16,"./Dropdown.react":22,"react":51}],33:[function(require,module,exports){
 const React = require('react');
 
 /**
@@ -3155,7 +3667,7 @@ const TextField = props => {
   });
 };
 module.exports = TextField;
-},{"react":49}],32:[function(require,module,exports){
+},{"react":51}],34:[function(require,module,exports){
 const React = require('react');
 const {
   throttle
@@ -3463,7 +3975,7 @@ module.exports = {
   useCompare,
   usePrevious
 };
-},{"bens_utils":41,"react":49}],33:[function(require,module,exports){
+},{"bens_utils":43,"react":51}],35:[function(require,module,exports){
 // type Point = {
 //   x: number,
 //   y: number,
@@ -3548,7 +4060,7 @@ const plotReducer = (state, action) => {
 module.exports = {
   plotReducer
 };
-},{}],34:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
 
 // const React = require('react');
 // const ReactDOM = require('react-dom');
@@ -3582,7 +4094,7 @@ module.exports = {
 
 
 
-},{"./bin/AudioWidget.react.js":12,"./bin/Board.react.js":13,"./bin/Button.react.js":14,"./bin/Canvas.react.js":15,"./bin/Checkbox.react.js":16,"./bin/CheckerBackground.react.js":17,"./bin/Divider.react.js":18,"./bin/DragArea.react.js":19,"./bin/Dropdown.react.js":20,"./bin/Indicator.react.js":21,"./bin/InfoCard.react.js":22,"./bin/Modal.react.js":23,"./bin/NumberField.react.js":24,"./bin/Plot.react.js":25,"./bin/QuitButton.react.js":26,"./bin/RadioPicker.react.js":27,"./bin/Slider.react.js":28,"./bin/SpriteSheet.react.js":29,"./bin/Table.react.js":30,"./bin/TextField.react.js":31,"./bin/hooks.js":32,"./bin/plotReducer.js":33}],35:[function(require,module,exports){
+},{"./bin/AudioWidget.react.js":14,"./bin/Board.react.js":15,"./bin/Button.react.js":16,"./bin/Canvas.react.js":17,"./bin/Checkbox.react.js":18,"./bin/CheckerBackground.react.js":19,"./bin/Divider.react.js":20,"./bin/DragArea.react.js":21,"./bin/Dropdown.react.js":22,"./bin/Indicator.react.js":23,"./bin/InfoCard.react.js":24,"./bin/Modal.react.js":25,"./bin/NumberField.react.js":26,"./bin/Plot.react.js":27,"./bin/QuitButton.react.js":28,"./bin/RadioPicker.react.js":29,"./bin/Slider.react.js":30,"./bin/SpriteSheet.react.js":31,"./bin/Table.react.js":32,"./bin/TextField.react.js":33,"./bin/hooks.js":34,"./bin/plotReducer.js":35}],37:[function(require,module,exports){
 'use strict';
 
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
@@ -3746,7 +4258,7 @@ module.exports = {
   getEntityPositions: getEntityPositions,
   entityInsideGrid: entityInsideGrid
 };
-},{"./helpers":36,"./math":37,"./vectors":40}],36:[function(require,module,exports){
+},{"./helpers":38,"./math":39,"./vectors":42}],38:[function(require,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -3893,7 +4405,7 @@ module.exports = {
   deepCopy: deepCopy,
   throttle: throttle
 };
-},{"./vectors":40}],37:[function(require,module,exports){
+},{"./vectors":42}],39:[function(require,module,exports){
 "use strict";
 
 var clamp = function clamp(val, min, max) {
@@ -3938,7 +4450,7 @@ module.exports = {
   clamp: clamp,
   subtractWithDeficit: subtractWithDeficit
 };
-},{}],38:[function(require,module,exports){
+},{}],40:[function(require,module,exports){
 'use strict';
 
 function isIpad() {
@@ -3969,7 +4481,7 @@ module.exports = {
   isMobile: isMobile,
   isPhone: isPhone
 };
-},{}],39:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 "use strict";
 
 var floor = Math.floor,
@@ -4024,7 +4536,7 @@ module.exports = {
   oneOf: oneOf,
   weightedOneOf: weightedOneOf
 };
-},{}],40:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 "use strict";
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -4223,7 +4735,7 @@ module.exports = {
   rotate: rotate,
   abs: abs
 };
-},{}],41:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 
 module.exports = {
   vectors: require('./bin/vectors'),
@@ -4234,7 +4746,7 @@ module.exports = {
   math: require('./bin/math'),
 }
 
-},{"./bin/gridHelpers":35,"./bin/helpers":36,"./bin/math":37,"./bin/platform":38,"./bin/stochastic":39,"./bin/vectors":40}],42:[function(require,module,exports){
+},{"./bin/gridHelpers":37,"./bin/helpers":38,"./bin/math":39,"./bin/platform":40,"./bin/stochastic":41,"./bin/vectors":42}],44:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -4420,7 +4932,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],43:[function(require,module,exports){
+},{}],45:[function(require,module,exports){
 (function (process){(function (){
 /**
  * @license React
@@ -9375,7 +9887,7 @@ if(/^(https?|file):$/.test(protocol)){// eslint-disable-next-line react-internal
 console.info('%cDownload the React DevTools '+'for a better development experience: '+'https://reactjs.org/link/react-devtools'+(protocol==='file:'?'\nYou might need to use a local HTTP server (instead of file://): '+'https://reactjs.org/link/react-devtools-faq':''),'font-weight:bold');}}}}exports.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED=Internals;exports.createPortal=createPortal$1;exports.createRoot=createRoot$1;exports.findDOMNode=findDOMNode;exports.flushSync=flushSync$1;exports.hydrate=hydrate;exports.hydrateRoot=hydrateRoot$1;exports.render=render;exports.unmountComponentAtNode=unmountComponentAtNode;exports.unstable_batchedUpdates=batchedUpdates$1;exports.unstable_renderSubtreeIntoContainer=renderSubtreeIntoContainer;exports.version=ReactVersion;/* global __REACT_DEVTOOLS_GLOBAL_HOOK__ */if(typeof __REACT_DEVTOOLS_GLOBAL_HOOK__!=='undefined'&&typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop==='function'){__REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop(new Error());}})();}
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":42,"react":49,"scheduler":52}],44:[function(require,module,exports){
+},{"_process":44,"react":51,"scheduler":54}],46:[function(require,module,exports){
 /**
  * @license React
  * react-dom.production.min.js
@@ -9700,7 +10212,7 @@ exports.hydrateRoot=function(a,b,c){if(!ol(a))throw Error(p(405));var d=null!=c&
 e);return new nl(b)};exports.render=function(a,b,c){if(!pl(b))throw Error(p(200));return sl(null,a,b,!1,c)};exports.unmountComponentAtNode=function(a){if(!pl(a))throw Error(p(40));return a._reactRootContainer?(Sk(function(){sl(null,null,a,!1,function(){a._reactRootContainer=null;a[uf]=null})}),!0):!1};exports.unstable_batchedUpdates=Rk;
 exports.unstable_renderSubtreeIntoContainer=function(a,b,c,d){if(!pl(c))throw Error(p(200));if(null==a||void 0===a._reactInternals)throw Error(p(38));return sl(a,b,c,!1,d)};exports.version="18.2.0-next-9e3b772b8-20220608";
 
-},{"react":49,"scheduler":52}],45:[function(require,module,exports){
+},{"react":51,"scheduler":54}],47:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -9729,7 +10241,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":42,"react-dom":46}],46:[function(require,module,exports){
+},{"_process":44,"react-dom":48}],48:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -9771,7 +10283,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"./cjs/react-dom.development.js":43,"./cjs/react-dom.production.min.js":44,"_process":42}],47:[function(require,module,exports){
+},{"./cjs/react-dom.development.js":45,"./cjs/react-dom.production.min.js":46,"_process":44}],49:[function(require,module,exports){
 (function (process){(function (){
 /**
  * @license React
@@ -12176,7 +12688,7 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":42}],48:[function(require,module,exports){
+},{"_process":44}],50:[function(require,module,exports){
 /**
  * @license React
  * react.production.min.js
@@ -12204,7 +12716,7 @@ exports.useCallback=function(a,b){return U.current.useCallback(a,b)};exports.use
 exports.useInsertionEffect=function(a,b){return U.current.useInsertionEffect(a,b)};exports.useLayoutEffect=function(a,b){return U.current.useLayoutEffect(a,b)};exports.useMemo=function(a,b){return U.current.useMemo(a,b)};exports.useReducer=function(a,b,e){return U.current.useReducer(a,b,e)};exports.useRef=function(a){return U.current.useRef(a)};exports.useState=function(a){return U.current.useState(a)};exports.useSyncExternalStore=function(a,b,e){return U.current.useSyncExternalStore(a,b,e)};
 exports.useTransition=function(){return U.current.useTransition()};exports.version="18.2.0";
 
-},{}],49:[function(require,module,exports){
+},{}],51:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -12215,7 +12727,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"./cjs/react.development.js":47,"./cjs/react.production.min.js":48,"_process":42}],50:[function(require,module,exports){
+},{"./cjs/react.development.js":49,"./cjs/react.production.min.js":50,"_process":44}],52:[function(require,module,exports){
 (function (process,setImmediate){(function (){
 /**
  * @license React
@@ -12853,7 +13365,7 @@ if (
 }
 
 }).call(this)}).call(this,require('_process'),require("timers").setImmediate)
-},{"_process":42,"timers":53}],51:[function(require,module,exports){
+},{"_process":44,"timers":55}],53:[function(require,module,exports){
 (function (setImmediate){(function (){
 /**
  * @license React
@@ -12876,7 +13388,7 @@ exports.unstable_scheduleCallback=function(a,b,c){var d=exports.unstable_now();"
 exports.unstable_shouldYield=M;exports.unstable_wrapCallback=function(a){var b=y;return function(){var c=y;y=b;try{return a.apply(this,arguments)}finally{y=c}}};
 
 }).call(this)}).call(this,require("timers").setImmediate)
-},{"timers":53}],52:[function(require,module,exports){
+},{"timers":55}],54:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -12887,7 +13399,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"./cjs/scheduler.development.js":50,"./cjs/scheduler.production.min.js":51,"_process":42}],53:[function(require,module,exports){
+},{"./cjs/scheduler.development.js":52,"./cjs/scheduler.production.min.js":53,"_process":44}],55:[function(require,module,exports){
 (function (setImmediate,clearImmediate){(function (){
 var nextTick = require('process/browser.js').nextTick;
 var apply = Function.prototype.apply;
@@ -12966,4 +13478,4 @@ exports.clearImmediate = typeof clearImmediate === "function" ? clearImmediate :
   delete immediateIds[id];
 };
 }).call(this)}).call(this,require("timers").setImmediate,require("timers").clearImmediate)
-},{"process/browser.js":42,"timers":53}]},{},[5]);
+},{"process/browser.js":44,"timers":55}]},{},[6]);
