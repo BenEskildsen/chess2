@@ -6,7 +6,7 @@ let socket = null;
 const setupSocket = (dispatch) => {
   socket = io();
   socket.on('receiveAction', (action) => {
-    console.log("received", action);
+    // console.log("received", action);
     dispatch(action);
   });
   return socket;

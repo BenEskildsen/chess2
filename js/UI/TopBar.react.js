@@ -78,8 +78,8 @@ const TopBar = (props) => {
             // const moves = possibleMoves(game, []);
             // dispatch(oneOf(moves));
 
-            const {score, move} = minimax(game, [], 2, -Infinity, Infinity, true
-              // getColorOfNextMove(game, []) == 'white',
+            const {score, move} = minimax(game, [], 4, -Infinity, Infinity,
+              getColorOfNextMove(game, []) == 'white',
             );
             console.log(score, move);
             dispatch({...move, fromServer: false});

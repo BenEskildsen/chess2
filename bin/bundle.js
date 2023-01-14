@@ -408,10 +408,7 @@ const TopBar = props => {
       const {
         score,
         move
-      } = minimax(game, [], 2, -Infinity, Infinity, true
-      // getColorOfNextMove(game, []) == 'white',
-      );
-
+      } = minimax(game, [], 4, -Infinity, Infinity, getColorOfNextMove(game, []) == 'white');
       console.log(score, move);
       dispatch({
         ...move,
@@ -506,7 +503,7 @@ let socket = null;
 const setupSocket = dispatch => {
   socket = io();
   socket.on('receiveAction', action => {
-    console.log("received", action);
+    // console.log("received", action);
     dispatch(action);
   });
   return socket;
@@ -1378,10 +1375,10 @@ function minimax(game, moveHistory, depth, alpha, beta, isMaximizingPlayer) {
       if (result.score > bestValue) {
         bestValue = result.score;
         bestMove = result.move;
-      } else if (result.score == bestValue && Math.random() < 0.6) {
-        bestValue = result.score;
-        bestMove = result.move;
+        // } else if (bestValue > -Infinity && result.score == bestValue && Math.random() < 0.1) {
+        //   bestMove = result.move;
       }
+
       alpha = Math.max(alpha, bestValue);
       if (beta <= alpha) {
         break;
@@ -1399,10 +1396,10 @@ function minimax(game, moveHistory, depth, alpha, beta, isMaximizingPlayer) {
       if (result.score < bestValue) {
         bestValue = result.score;
         bestMove = result.move;
-      } else if (result.score == bestValue && Math.random() < 0.6) {
-        bestValue = result.score;
-        bestMove = result.move;
+        // } else if (bestValue < Infinity && result.score == bestValue && Math.random() < 0.1) {
+        //   bestMove = result.move;
       }
+
       beta = Math.min(beta, bestValue);
       if (beta <= alpha) {
         break;

@@ -17,9 +17,8 @@ function minimax(game, moveHistory, depth, alpha, beta, isMaximizingPlayer) {
         if (result.score > bestValue) {
           bestValue = result.score;
           bestMove = result.move;
-        } else if (result.score == bestValue && Math.random() < 0.6) {
-          bestValue = result.score;
-          bestMove = result.move;
+        // } else if (bestValue > -Infinity && result.score == bestValue && Math.random() < 0.1) {
+        //   bestMove = result.move;
         }
         alpha = Math.max(alpha, bestValue);
         if (beta <= alpha) {
@@ -35,9 +34,8 @@ function minimax(game, moveHistory, depth, alpha, beta, isMaximizingPlayer) {
         if (result.score < bestValue) {
           bestValue = result.score;
           bestMove = result.move;
-        } else if (result.score == bestValue && Math.random() < 0.6) {
-          bestValue = result.score;
-          bestMove = result.move;
+        // } else if (bestValue < Infinity && result.score == bestValue && Math.random() < 0.1) {
+        //   bestMove = result.move;
         }
         beta = Math.min(beta, bestValue);
         if (beta <= alpha) {

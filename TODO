@@ -13,6 +13,7 @@
     - evaluateBoard function
       - check, checkmate
       - 1 > control of center, pawn structure, activity (nums moves for each side)
+    - fails when a player runs out of pieces
 
 
 - - - - - FIX - - - - - -
