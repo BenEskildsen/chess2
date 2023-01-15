@@ -103,7 +103,7 @@ const choosePiece = (valueRemaining, placedKing) => {
   }
 
   possiblePieces = possiblePieces.filter(t => !placedKing || t != 'king');
-  const weights = possiblePieces.map(pieceToValue);
+  const weights = possiblePieces.map((p) => pieceToValue(p));
 
   return weightedOneOf(possiblePieces, weights);
 }
