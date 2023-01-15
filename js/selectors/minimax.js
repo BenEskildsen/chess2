@@ -3,25 +3,31 @@ const {getLegalMoves, insideBoard} = require('./moves');
 const {deepCopy} = require('bens_utils').helpers;
 const {gameReducer} = require('../reducers/gameReducer');
 
-function minimax(game, moveHistory, depth, alpha, beta, isMaximizingPlayer) {
+window.positionsEvaluated = 0;
+function minimax(game, depth, alpha, beta, isMaximizingPlayer) {
     // base case: reach the leaf node or maximum depth
-    if (depth === 0 || isGameOver(game, moveHistory)) {
-        return {score: evaluate(game, moveHistory), move: moveHistory[0]};
+    if (depth === 0 || isGameOver(game)) {
+      window.positionsEvaluated++;
+      return {score: evaluate(game), move: game.moveHistory[game.moveHistory.length - 1]};
     }
+    // let tabs = "\t".repeat(4-depth);
 
     if (isMaximizingPlayer) {
       let bestValue = -Infinity;
       let bestMove = null;
-      for (let move of possibleMoves(game, moveHistory)) {
-        const result = minimax(game, [...moveHistory, move], depth - 1, alpha, beta, false);
+      for (let move of possibleMoves(game)) {
+        let gameCopy = applyMoves(game, [move]);
+        const result = minimax(gameCopy, depth - 1, alpha, beta, false);
+        // console.log(tabs + move.id + " " + move.position.x + "," + move.position.y + " " +  result.score);
         if (result.score > bestValue) {
           bestValue = result.score;
           bestMove = move;
-        // } else if (bestValue > -Infinity && result.score == bestValue && Math.random() < 0.1) {
-        //   bestMove = {...move};
+        } else if (result.score == bestValue && Math.random() < 0.1) {
+          bestMove = move;
         }
         alpha = Math.max(alpha, bestValue);
-        if (beta <= alpha) {
+        if (beta < alpha) {
+          // console.log(tabs + alpha + " " + beta);
           break;
         }
       }
@@ -29,16 +35,19 @@ function minimax(game, moveHistory, depth, alpha, beta, isMaximizingPlayer) {
     } else {
       let bestValue = Infinity;
       let bestMove = null;
-      for (let move of possibleMoves(game, moveHistory)) {
-        const result = minimax(game, [...moveHistory, move], depth - 1, alpha, beta, true);
+      for (let move of possibleMoves(game)) {
+        let gameCopy = applyMoves(game, [move]);
+        const result = minimax(gameCopy, depth - 1, alpha, beta, true);
+        // console.log(tabs + move.id + " " + move.position.x + "," + move.position.y + " " +  result.score);
         if (result.score < bestValue) {
           bestValue = result.score;
           bestMove = move;
-        // } else if (bestValue < Infinity && result.score == bestValue && Math.random() < 0.1) {
-        //   bestMove = {...move};
+        } else if (result.score == bestValue && Math.random() < 0.1) {
+          bestMove = move;
         }
         beta = Math.min(beta, bestValue);
-        if (beta <= alpha) {
+        if (beta < alpha) {
+          // console.log(tabs + alpha + " " + beta);
           break;
         }
       }
@@ -46,47 +55,33 @@ function minimax(game, moveHistory, depth, alpha, beta, isMaximizingPlayer) {
     }
 }
 
-const evaluate = (game, moveHistory) => {
-  const gameCopy = applyMoves(game, moveHistory);
+const evaluate = (game) => {
   let score = 0;
   // lost:
 
   // material:
-  score += gameCopy.colorValues.white - gameCopy.colorValues.black;
+  score += game.colorValues.white - game.colorValues.black;
 
   // activity:
 
   return score;
 };
 
-const isGameOver = (game, moveHistory) => {
+const isGameOver = (game) => {
   return false;
 };
 
-const possibleMoves = (game, moveHistory) => {
+const possibleMoves = (game) => {
   // which color is moving
-  let color = 'white';
-  let gameCopy = game;
-  if (moveHistory.length > 0) {
-    const lastMovedPiece = getPieceByID(game, moveHistory[moveHistory.length - 1].id);
-    if (lastMovedPiece.color == 'white') {
-      color = 'black';
-    }
-    gameCopy = applyMoves(game, moveHistory);
-  } else if (game.moveHistory.length > 0) {
-    const lastMovedPiece = getPieceByID(game, game.moveHistory[game.moveHistory.length - 1].id);
-    if (lastMovedPiece.color == 'white') {
-      color = 'black';
-    }
-  }
+  const color = getColorOfNextMove(game);
 
   let allPossibleMoves = [];
-  for (const piece of gameCopy.pieces) {
+  for (const piece of game.pieces) {
     if (piece.color != color) continue;
-    if (!insideBoard(gameCopy, piece.position)) continue;
+    if (!insideBoard(game, piece.position)) continue;
     allPossibleMoves = allPossibleMoves.concat(
-      getLegalMoves(gameCopy, piece).map(position => {
-        return {type: 'MOVE_PIECE', id: piece.id, position, fromServer: true};
+      getLegalMoves(game, piece).map(position => {
+        return {type: 'MOVE_PIECE', id: piece.id, position, isMinimax: true};
       })
     );
   }
@@ -101,18 +96,12 @@ const applyMoves = (game, moveHistory) => {
   return gameCopy;
 };
 
-const getColorOfNextMove = (game, moveHistory) => {
+const getColorOfNextMove = (game) => {
   // which color is moving
   let color = 'white';
-  let gameCopy = game;
-  if (moveHistory.length > 0) {
-    const lastMovedPiece = getPieceByID(game, moveHistory[moveHistory.length - 1].id);
-    if (lastMovedPiece.color == 'white') {
-      color = 'black';
-    }
-  } else if (game.moveHistory.length > 0) {
+  if (game.moveHistory.length > 0) {
     const lastMovedPiece = getPieceByID(game, game.moveHistory[game.moveHistory.length - 1].id);
-    if (lastMovedPiece.color == 'white') {
+    if (lastMovedPiece?.color == 'white') {
       color = 'black';
     }
   }

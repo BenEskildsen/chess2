@@ -24,15 +24,19 @@ const config = {
     'black_knishop': {x: 7, y: 1},
   },
 
-  pieceToValue: {
-    pawn: 1,
-    knight: 3,
-    bishop: 3,
-    king: 4,
-    rook: 5,
-    knook: 8,
-    knishop: 8,
-    queen: 9,
+  pieceToValue: (pieceType, isMinimax) => {
+    const vals = {
+      pawn: 1,
+      knight: 3,
+      bishop: 3,
+      king: 4,
+      rook: 5,
+      knook: 8,
+      knishop: 8,
+      queen: 9,
+    };
+    if (isMinimax && pieceType == 'king') return 1000;
+    return vals[pieceType];
   },
 }
 

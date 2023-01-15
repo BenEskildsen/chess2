@@ -37,13 +37,13 @@ const gameReducer = (game, action) => {
       }
 
       addPiece(game, color, pieceType, position);
-      game.colorValues[color] += config.pieceToValue[pieceType];
+      game.colorValues[color] += config.pieceToValue(pieceType);
 
       return {...game};
     }
     case 'MOVE_PIECE': {
-      const {fromServer, id, position} = action;
-      if (!fromServer) {
+      const {fromServer, id, position, isMinimax} = action;
+      if (!fromServer && !isMinimax) {
         dispatchToServer({...action, fromServer: true})
       }
 
@@ -51,7 +51,8 @@ const gameReducer = (game, action) => {
       const pieceAtPosition = getPieceAtPosition(game, position);
       if (pieceAtPosition && pieceAtPosition.id != id) {
         game = removePiece(game, pieceAtPosition);
-        game.colorValues[pieceAtPosition.color] -= config.pieceToValue[pieceAtPosition?.type];
+        game.colorValues[pieceAtPosition.color] -=
+          config.pieceToValue(pieceAtPosition?.type, isMinimax);
       }
 
       const pieceToMove = getPieceByID(game, id);
@@ -66,7 +67,7 @@ const gameReducer = (game, action) => {
             pieceToMove.color == 'black' && pieceToMove.position.y == 0
           )) {
             addPiece(game, pieceToMove.color, pieceToMove.type, pieceToMove.position);
-            game.colorValues[pieceToMove.color] += config.pieceToValue[pieceToMove.type];
+            game.colorValues[pieceToMove.color] += config.pieceToValue(pieceToMove.type, isMinimax);
           }
         }
 

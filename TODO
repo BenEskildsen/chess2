@@ -1,6 +1,7 @@
 
 - - - - - PLAYTEST - - - - - -
   - when I look away sometimes pieces get redeployed
+    - and undo can take them all away
   - mobile issues:
     - too far down and too narrow
     - show/hide deployment options doesn't work

@@ -408,11 +408,13 @@ const TopBar = props => {
       const {
         score,
         move
-      } = minimax(game, [], 4, -Infinity, Infinity, getColorOfNextMove(game, []) == 'white');
-      console.log(score, move);
+      } = minimax(game, 4, -Infinity, Infinity, getColorOfNextMove(game) == 'white');
+      // console.log(score, move);
+      console.log("positions evaluated", window.positionsEvaluated);
+      window.positionsEvaluated = 0;
       dispatch({
         ...move,
-        fromServer: false
+        isMinimax: false
       });
     }
   }), /*#__PURE__*/React.createElement("div", null, "\xA0 White Score: ", game.colorValues['white']), /*#__PURE__*/React.createElement("div", null, "\xA0 Black Score: ", game.colorValues['black'])), /*#__PURE__*/React.createElement(DeploymentBar, props));
@@ -591,15 +593,19 @@ const config = {
       y: 1
     }
   },
-  pieceToValue: {
-    pawn: 1,
-    knight: 3,
-    bishop: 3,
-    king: 4,
-    rook: 5,
-    knook: 8,
-    knishop: 8,
-    queen: 9
+  pieceToValue: (pieceType, isMinimax) => {
+    const vals = {
+      pawn: 1,
+      knight: 3,
+      bishop: 3,
+      king: 4,
+      rook: 5,
+      knook: 8,
+      knishop: 8,
+      queen: 9
+    };
+    if (isMinimax && pieceType == 'king') return 1000;
+    return vals[pieceType];
   }
 };
 module.exports = {
@@ -682,7 +688,7 @@ const gameReducer = (game, action) => {
           });
         }
         addPiece(game, color, pieceType, position);
-        game.colorValues[color] += config.pieceToValue[pieceType];
+        game.colorValues[color] += config.pieceToValue(pieceType);
         return {
           ...game
         };
@@ -692,9 +698,10 @@ const gameReducer = (game, action) => {
         const {
           fromServer,
           id,
-          position
+          position,
+          isMinimax
         } = action;
-        if (!fromServer) {
+        if (!fromServer && !isMinimax) {
           dispatchToServer({
             ...action,
             fromServer: true
@@ -705,7 +712,7 @@ const gameReducer = (game, action) => {
         const pieceAtPosition = getPieceAtPosition(game, position);
         if (pieceAtPosition && pieceAtPosition.id != id) {
           game = removePiece(game, pieceAtPosition);
-          game.colorValues[pieceAtPosition.color] -= config.pieceToValue[pieceAtPosition === null || pieceAtPosition === void 0 ? void 0 : pieceAtPosition.type];
+          game.colorValues[pieceAtPosition.color] -= config.pieceToValue(pieceAtPosition === null || pieceAtPosition === void 0 ? void 0 : pieceAtPosition.type, isMinimax);
         }
         const pieceToMove = getPieceByID(game, id);
         if (pieceToMove) {
@@ -716,7 +723,7 @@ const gameReducer = (game, action) => {
           if (game.boardType == 'deployment') {
             if (pieceToMove != null && (pieceToMove.color == 'white' && pieceToMove.position.y == 11 || pieceToMove.color == 'black' && pieceToMove.position.y == 0)) {
               addPiece(game, pieceToMove.color, pieceToMove.type, pieceToMove.position);
-              game.colorValues[pieceToMove.color] += config.pieceToValue[pieceToMove.type];
+              game.colorValues[pieceToMove.color] += config.pieceToValue(pieceToMove.type, isMinimax);
             }
           }
           pieceToMove.position = position;
@@ -1359,28 +1366,34 @@ const {
 const {
   gameReducer
 } = require('../reducers/gameReducer');
-function minimax(game, moveHistory, depth, alpha, beta, isMaximizingPlayer) {
+window.positionsEvaluated = 0;
+function minimax(game, depth, alpha, beta, isMaximizingPlayer) {
   // base case: reach the leaf node or maximum depth
-  if (depth === 0 || isGameOver(game, moveHistory)) {
+  if (depth === 0 || isGameOver(game)) {
+    window.positionsEvaluated++;
     return {
-      score: evaluate(game, moveHistory),
-      move: moveHistory[0]
+      score: evaluate(game),
+      move: game.moveHistory[game.moveHistory.length - 1]
     };
   }
+  // let tabs = "\t".repeat(4-depth);
+
   if (isMaximizingPlayer) {
     let bestValue = -Infinity;
     let bestMove = null;
-    for (let move of possibleMoves(game, moveHistory)) {
-      const result = minimax(game, [...moveHistory, move], depth - 1, alpha, beta, false);
+    for (let move of possibleMoves(game)) {
+      let gameCopy = applyMoves(game, [move]);
+      const result = minimax(gameCopy, depth - 1, alpha, beta, false);
+      // console.log(tabs + move.id + " " + move.position.x + "," + move.position.y + " " +  result.score);
       if (result.score > bestValue) {
         bestValue = result.score;
         bestMove = move;
-        // } else if (bestValue > -Infinity && result.score == bestValue && Math.random() < 0.1) {
-        //   bestMove = {...move};
+      } else if (result.score == bestValue && Math.random() < 0.1) {
+        bestMove = move;
       }
-
       alpha = Math.max(alpha, bestValue);
-      if (beta <= alpha) {
+      if (beta < alpha) {
+        // console.log(tabs + alpha + " " + beta);
         break;
       }
     }
@@ -1391,17 +1404,19 @@ function minimax(game, moveHistory, depth, alpha, beta, isMaximizingPlayer) {
   } else {
     let bestValue = Infinity;
     let bestMove = null;
-    for (let move of possibleMoves(game, moveHistory)) {
-      const result = minimax(game, [...moveHistory, move], depth - 1, alpha, beta, true);
+    for (let move of possibleMoves(game)) {
+      let gameCopy = applyMoves(game, [move]);
+      const result = minimax(gameCopy, depth - 1, alpha, beta, true);
+      // console.log(tabs + move.id + " " + move.position.x + "," + move.position.y + " " +  result.score);
       if (result.score < bestValue) {
         bestValue = result.score;
         bestMove = move;
-        // } else if (bestValue < Infinity && result.score == bestValue && Math.random() < 0.1) {
-        //   bestMove = {...move};
+      } else if (result.score == bestValue && Math.random() < 0.1) {
+        bestMove = move;
       }
-
       beta = Math.min(beta, bestValue);
-      if (beta <= alpha) {
+      if (beta < alpha) {
+        // console.log(tabs + alpha + " " + beta);
         break;
       }
     }
@@ -1411,47 +1426,33 @@ function minimax(game, moveHistory, depth, alpha, beta, isMaximizingPlayer) {
     };
   }
 }
-const evaluate = (game, moveHistory) => {
-  const gameCopy = applyMoves(game, moveHistory);
+const evaluate = game => {
   let score = 0;
   // lost:
 
   // material:
-  score += gameCopy.colorValues.white - gameCopy.colorValues.black;
+  score += game.colorValues.white - game.colorValues.black;
 
   // activity:
 
   return score;
 };
-const isGameOver = (game, moveHistory) => {
+const isGameOver = game => {
   return false;
 };
-const possibleMoves = (game, moveHistory) => {
+const possibleMoves = game => {
   // which color is moving
-  let color = 'white';
-  let gameCopy = game;
-  if (moveHistory.length > 0) {
-    const lastMovedPiece = getPieceByID(game, moveHistory[moveHistory.length - 1].id);
-    if (lastMovedPiece.color == 'white') {
-      color = 'black';
-    }
-    gameCopy = applyMoves(game, moveHistory);
-  } else if (game.moveHistory.length > 0) {
-    const lastMovedPiece = getPieceByID(game, game.moveHistory[game.moveHistory.length - 1].id);
-    if (lastMovedPiece.color == 'white') {
-      color = 'black';
-    }
-  }
+  const color = getColorOfNextMove(game);
   let allPossibleMoves = [];
-  for (const piece of gameCopy.pieces) {
+  for (const piece of game.pieces) {
     if (piece.color != color) continue;
-    if (!insideBoard(gameCopy, piece.position)) continue;
-    allPossibleMoves = allPossibleMoves.concat(getLegalMoves(gameCopy, piece).map(position => {
+    if (!insideBoard(game, piece.position)) continue;
+    allPossibleMoves = allPossibleMoves.concat(getLegalMoves(game, piece).map(position => {
       return {
         type: 'MOVE_PIECE',
         id: piece.id,
         position,
-        fromServer: true
+        isMinimax: true
       };
     }));
   }
@@ -1464,18 +1465,12 @@ const applyMoves = (game, moveHistory) => {
   }
   return gameCopy;
 };
-const getColorOfNextMove = (game, moveHistory) => {
+const getColorOfNextMove = game => {
   // which color is moving
   let color = 'white';
-  let gameCopy = game;
-  if (moveHistory.length > 0) {
-    const lastMovedPiece = getPieceByID(game, moveHistory[moveHistory.length - 1].id);
-    if (lastMovedPiece.color == 'white') {
-      color = 'black';
-    }
-  } else if (game.moveHistory.length > 0) {
+  if (game.moveHistory.length > 0) {
     const lastMovedPiece = getPieceByID(game, game.moveHistory[game.moveHistory.length - 1].id);
-    if (lastMovedPiece.color == 'white') {
+    if ((lastMovedPiece === null || lastMovedPiece === void 0 ? void 0 : lastMovedPiece.color) == 'white') {
       color = 'black';
     }
   }
@@ -1493,11 +1488,19 @@ const {
 const {
   getPieceAtPosition
 } = require('./selectors');
+const {
+  pieceToValue
+} = require('../config').config;
 const isMoveInLegalMoves = (legalMoves, position) => {
   for (const pos of legalMoves) {
     if (equals(pos, position)) return true;
   }
   return false;
+};
+const isCapture = (game, position) => {
+  const pieceAtPosition = getPieceAtPosition(game, position);
+  if (!pieceAtPosition) return 0;
+  return pieceToValue(pieceAtPosition.type, true);
 };
 function getLegalMoves(game, piece) {
   const {
@@ -1673,6 +1676,10 @@ function getLegalMoves(game, piece) {
   return legalMoves.filter(pos => insideBoard(game, pos)).filter(pos => {
     var _getPieceAtPosition6;
     return ((_getPieceAtPosition6 = getPieceAtPosition(game, pos)) === null || _getPieceAtPosition6 === void 0 ? void 0 : _getPieceAtPosition6.color) != color;
+  })
+  // sort in descending order of move capture score
+  .sort((moveA, moveB) => {
+    return isCapture(game, moveB) - isCapture(game, moveA);
   });
 }
 const getBishopMoves = (game, x, y) => {
@@ -1757,7 +1764,7 @@ module.exports = {
   getLegalMoves,
   insideBoard
 };
-},{"./selectors":12,"bens_utils":43}],12:[function(require,module,exports){
+},{"../config":5,"./selectors":12,"bens_utils":43}],12:[function(require,module,exports){
 const {
   equals
 } = require('bens_utils').vectors;
@@ -1896,7 +1903,7 @@ const randomDeploymentByColor = (dispatch, game, value, color) => {
       y
     }))) continue;
     const pieceType = oneOf(['pawn', 'pawn', 'pawn', 'pawn', 'knight', 'bishop']);
-    valueRemaining -= pieceToValue[pieceType];
+    valueRemaining -= pieceToValue(pieceType);
     if (valueRemaining < 0) break;
     dispatch({
       type: 'CREATE_PIECE',
@@ -1919,7 +1926,7 @@ const randomDeploymentByColor = (dispatch, game, value, color) => {
     }))) continue;
     const pieceType = choosePiece(valueRemaining, placedKing);
     if (pieceType == 'king') placedKing = true;
-    valueRemaining -= pieceToValue[pieceType];
+    valueRemaining -= pieceToValue(pieceType);
     if (valueRemaining < 0) break;
     dispatch({
       type: 'CREATE_PIECE',
@@ -1961,7 +1968,7 @@ const choosePiece = (valueRemaining, placedKing) => {
     possiblePieces = ['king'];
   }
   possiblePieces = possiblePieces.filter(t => !placedKing || t != 'king');
-  const weights = possiblePieces.map(p => pieceToValue[p]);
+  const weights = possiblePieces.map(pieceToValue);
   return weightedOneOf(possiblePieces, weights);
 };
 const mirrorDeployment = (dispatch, game, color) => {

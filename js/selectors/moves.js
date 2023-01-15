@@ -1,12 +1,19 @@
 
 const {equals} = require('bens_utils').vectors;
 const {getPieceAtPosition} = require('./selectors');
+const {pieceToValue} = require('../config').config;
 
 const isMoveInLegalMoves = (legalMoves, position) => {
   for (const pos of legalMoves) {
     if (equals(pos, position)) return true;
   }
   return false;
+}
+
+const isCapture = (game, position) => {
+  const pieceAtPosition = getPieceAtPosition(game, position);
+  if (!pieceAtPosition) return 0;
+  return pieceToValue(pieceAtPosition.type, true);
 }
 
 function getLegalMoves(game, piece) {
@@ -105,7 +112,11 @@ function getLegalMoves(game, piece) {
   }
   return legalMoves
     .filter(pos => insideBoard(game, pos))
-    .filter(pos => getPieceAtPosition(game, pos)?.color != color);
+    .filter(pos => getPieceAtPosition(game, pos)?.color != color)
+    // sort in descending order of move capture score
+    .sort((moveA, moveB) => {
+      return isCapture(game, moveB) - isCapture(game, moveA);
+    });
 }
 
 const getBishopMoves = (game, x, y) => {

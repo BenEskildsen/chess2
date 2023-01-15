@@ -42,7 +42,7 @@ const randomDeploymentByColor = (dispatch, game, value, color) => {
   for (let x = 0; x < game.boardSize.width; x++) {
     if (getPieceAtPosition(game, game.boardToGrid({x, y}))) continue;
     const pieceType = oneOf(['pawn', 'pawn', 'pawn', 'pawn', 'knight', 'bishop']);
-    valueRemaining -= pieceToValue[pieceType];
+    valueRemaining -= pieceToValue(pieceType);
     if (valueRemaining < 0) break;
 
     dispatch({type: 'CREATE_PIECE',
@@ -57,7 +57,7 @@ const randomDeploymentByColor = (dispatch, game, value, color) => {
     if (getPieceAtPosition(game, game.boardToGrid({x, y}))) continue;
     const pieceType = choosePiece(valueRemaining, placedKing);
     if (pieceType == 'king') placedKing = true;
-    valueRemaining -= pieceToValue[pieceType];
+    valueRemaining -= pieceToValue(pieceType);
     if (valueRemaining < 0) break;
 
     dispatch({type: 'CREATE_PIECE',
@@ -103,7 +103,7 @@ const choosePiece = (valueRemaining, placedKing) => {
   }
 
   possiblePieces = possiblePieces.filter(t => !placedKing || t != 'king');
-  const weights = possiblePieces.map(p => pieceToValue[p]);
+  const weights = possiblePieces.map(pieceToValue);
 
   return weightedOneOf(possiblePieces, weights);
 }
