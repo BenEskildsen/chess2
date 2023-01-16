@@ -13,6 +13,7 @@ const config = {
     'white_pawn': {x: 5, y: 0},
     'white_knook': {x: 6, y: 0},
     'white_knishop': {x: 7, y: 0},
+    'white_camel': {x: 8, y: 0},
 
     'black_king': {x: 0, y: 1},
     'black_queen': {x: 1, y: 1},
@@ -22,11 +23,13 @@ const config = {
     'black_pawn': {x: 5, y: 1},
     'black_knook': {x: 6, y: 1},
     'black_knishop': {x: 7, y: 1},
+    'black_camel': {x: 8, y: 1},
   },
 
   pieceToValue: (pieceType, isMinimax) => {
     const vals = {
       pawn: 1,
+      camel: 2,
       knight: 3,
       bishop: 3,
       king: 4,

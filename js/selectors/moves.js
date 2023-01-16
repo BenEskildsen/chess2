@@ -83,6 +83,9 @@ function getLegalMoves(game, piece) {
     case 'knight':
       legalMoves = getKnightMoves(game, x, y);
       break;
+    case 'camel':
+      legalMoves = getCamelMoves(game, x, y);
+      break;
     case 'bishop':
       legalMoves = getBishopMoves(game, x, y);
       break;
@@ -130,6 +133,12 @@ const getKnightMoves = (game, x, y) => {
   return [
     {x: x - 1, y: y - 2}, {x: x + 1, y: y - 2}, {x: x - 2, y: y - 1}, {x: x + 2, y: y - 1},
     {x: x - 2, y: y + 1}, {x: x + 2, y: y + 1}, {x: x - 1, y: y + 2}, {x: x + 1, y: y + 2},
+  ];
+}
+const getCamelMoves= (game, x, y) => {
+  return [
+    {x: x - 1, y: y - 3}, {x: x + 1, y: y - 3}, {x: x - 3, y: y - 1}, {x: x + 3, y: y - 1},
+    {x: x - 3, y: y + 1}, {x: x + 3, y: y + 1}, {x: x - 1, y: y + 3}, {x: x + 1, y: y + 3},
   ];
 }
 

@@ -41,7 +41,7 @@ const randomDeploymentByColor = (dispatch, game, value, color) => {
   let y = color == 'white' ? 6 : 1;
   for (let x = 0; x < game.boardSize.width; x++) {
     if (getPieceAtPosition(game, game.boardToGrid({x, y}))) continue;
-    const pieceType = oneOf(['pawn', 'pawn', 'pawn', 'pawn', 'knight', 'bishop']);
+    const pieceType = oneOf(['pawn', 'pawn', 'pawn', 'pawn', 'knight', 'bishop', 'camel']);
     valueRemaining -= pieceToValue(pieceType);
     if (valueRemaining < 0) break;
 
@@ -70,30 +70,32 @@ const choosePiece = (valueRemaining, placedKing) => {
   let possiblePieces = [];
   switch (valueRemaining) {
     case 1:
-    case 2:
       possiblePieces.push('pawn');
+      break;
+    case 2:
+      possiblePieces.push('camel');
       break;
     case 3:
       possiblePieces = possiblePieces.concat(['knight', 'knight', 'bishop']);
       break;
     case 4:
-      possiblePieces = possiblePieces.concat(['knight', 'bishop', 'pawn', 'king']);
+      possiblePieces = possiblePieces.concat(['knight', 'bishop', 'camel', 'pawn', 'king']);
       break;
     case 5:
     case 6:
     case 7:
-      possiblePieces = possiblePieces.concat(['knight', 'bishop', 'rook', 'king']);
+      possiblePieces = possiblePieces.concat(['knight', 'bishop', 'rook', 'king', 'camel']);
       break;
     case 8:
       possiblePieces = possiblePieces.concat([
         'knight', 'bishop', 'rook', 'king',
-        'knishop', 'knook',
+        'knishop', 'knook', 'camel',
       ]);
       break;
     default:
       possiblePieces = possiblePieces.concat([
         'knight', 'bishop', 'rook', 'king',
-        'knishop', 'knook', 'queen',
+        'knishop', 'knook', 'queen', 'camel',
       ]);
       break;
   }

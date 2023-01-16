@@ -50,6 +50,11 @@ const gameReducer = (game, action) => {
       // check for capture
       const pieceAtPosition = getPieceAtPosition(game, position);
       if (pieceAtPosition && pieceAtPosition.id != id) {
+        action.capture = {
+          color: pieceAtPosition.color,
+          pieceType: pieceAtPosition.type,
+          id: pieceAtPosition.id,
+        };
         game = removePiece(game, pieceAtPosition);
         game.colorValues[pieceAtPosition.color] -=
           config.pieceToValue(pieceAtPosition?.type, isMinimax);
@@ -71,6 +76,7 @@ const gameReducer = (game, action) => {
           }
         }
 
+        action.prevPosition = {...pieceToMove.position};
         pieceToMove.position = position;
         game.moveHistory = [...game.moveHistory, action];
       }
@@ -84,12 +90,44 @@ const gameReducer = (game, action) => {
         legalMoves,
       };
     }
+    case 'UNDO': {
+      const {isMinimax} = action;
+
+      const moveAction = game.moveHistory.pop();
+      if (!moveAction) return {...game};
+      const piece = getPieceByID(game, moveAction.id);
+
+      // deployment
+      if (
+        piece.color == 'white' && moveAction.prevPosition.y == 11 ||
+        piece.color == 'black' && moveAction.prevPosition.y == 0
+      ) {
+        const pieceAtPosition = getPieceAtPosition(game, moveAction.prevPosition);
+        game = removePiece(game, pieceAtPosition);
+        game.colorValues[piece.color] -= config.pieceToValue(piece.type, isMinimax);
+      }
+
+      piece.position = moveAction.prevPosition;
+
+      if (game.moveHistory.length > 0) {
+        game.prevPiecePosition = {...game.moveHistory[game.moveHistory.length - 1].prevPosition};
+      }
+
+      // capture
+      if (moveAction.capture) {
+        const {color, pieceType, id} = moveAction.capture;
+        addPiece(game, color, pieceType, moveAction.position, id);
+        game.colorValues[color] += config.pieceToValue(pieceType, isMinimax);
+      }
+
+      return game;
+    }
   }
   return game;
 }
 
-const addPiece = (game, color, type, position) => {
-  game.pieces = [...game.pieces, {id: game.nextPieceID, color, type, position: {...position}}];
+const addPiece = (game, color, type, position, id) => {
+  game.pieces = [...game.pieces, {id: id ? id : game.nextPieceID, color, type, position: {...position}}];
   game.nextPieceID++;
 }
 

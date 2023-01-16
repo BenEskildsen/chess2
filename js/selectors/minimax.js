@@ -16,8 +16,9 @@ function minimax(game, depth, alpha, beta, isMaximizingPlayer) {
       let bestValue = -Infinity;
       let bestMove = null;
       for (let move of possibleMoves(game)) {
-        let gameCopy = applyMoves(game, [move]);
-        const result = minimax(gameCopy, depth - 1, alpha, beta, false);
+        // let gameCopy = applyMoves(game, [move]);
+        game = gameReducer(game, move);
+        const result = minimax(game, depth - 1, alpha, beta, false);
         // console.log(tabs + move.id + " " + move.position.x + "," + move.position.y + " " +  result.score);
         if (result.score > bestValue) {
           bestValue = result.score;
@@ -26,6 +27,7 @@ function minimax(game, depth, alpha, beta, isMaximizingPlayer) {
           bestMove = move;
         }
         alpha = Math.max(alpha, bestValue);
+        game = gameReducer(game, {type: 'UNDO', isMinimax: true});
         if (beta < alpha) {
           // console.log(tabs + alpha + " " + beta);
           break;
@@ -36,8 +38,9 @@ function minimax(game, depth, alpha, beta, isMaximizingPlayer) {
       let bestValue = Infinity;
       let bestMove = null;
       for (let move of possibleMoves(game)) {
-        let gameCopy = applyMoves(game, [move]);
-        const result = minimax(gameCopy, depth - 1, alpha, beta, true);
+        // let gameCopy = applyMoves(game, [move]);
+        game = gameReducer(game, move);
+        const result = minimax(game, depth - 1, alpha, beta, true);
         // console.log(tabs + move.id + " " + move.position.x + "," + move.position.y + " " +  result.score);
         if (result.score < bestValue) {
           bestValue = result.score;
@@ -46,6 +49,7 @@ function minimax(game, depth, alpha, beta, isMaximizingPlayer) {
           bestMove = move;
         }
         beta = Math.min(beta, bestValue);
+        game = gameReducer(game, {type: 'UNDO', isMinimax: true});
         if (beta < alpha) {
           // console.log(tabs + alpha + " " + beta);
           break;

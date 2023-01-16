@@ -53,7 +53,7 @@ function Game(props) {
     return game.boardType == 'deployment' ? /*#__PURE__*/React.createElement(DeploymentBoard, {
       game: game
     }) : null;
-  }, [game.boardType, game.legalMoves.length, game.moveHistory]);
+  }, [game.boardType, game.legalMoves.length, game.moveHistory.length]);
   return /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
@@ -189,7 +189,7 @@ const makePiece = (game, piece) => {
   const spriteSheet = {
     pxWidth,
     pxHeight,
-    imagesAcross: 8,
+    imagesAcross: 10,
     imagesDown: 2
   };
   // const sprite = useMemo(() => {
@@ -294,6 +294,9 @@ const React = require('react');
 const {
   oneOf
 } = require('bens_utils').stochastic;
+const {
+  deepCopy
+} = require('bens_utils').helpers;
 const {
   Button,
   InfoCard,
@@ -405,12 +408,14 @@ const TopBar = props => {
       // const moves = possibleMoves(game, []);
       // dispatch(oneOf(moves));
 
+      const startTime = Date.now();
       const {
         score,
         move
-      } = minimax(game, 4, -Infinity, Infinity, getColorOfNextMove(game) == 'white');
+      } = minimax(deepCopy(game), 4, -Infinity, Infinity, getColorOfNextMove(game) == 'white');
       // console.log(score, move);
-      console.log("positions evaluated", window.positionsEvaluated);
+      const totalTime = Date.now() - startTime;
+      console.log("positions evaluated", window.positionsEvaluated, "in " + (totalTime / 1000).toFixed(3) + " seconds");
       window.positionsEvaluated = 0;
       dispatch({
         ...move,
@@ -560,6 +565,10 @@ const config = {
       x: 7,
       y: 0
     },
+    'white_camel': {
+      x: 8,
+      y: 0
+    },
     'black_king': {
       x: 0,
       y: 1
@@ -591,11 +600,16 @@ const config = {
     'black_knishop': {
       x: 7,
       y: 1
+    },
+    'black_camel': {
+      x: 8,
+      y: 1
     }
   },
   pieceToValue: (pieceType, isMinimax) => {
     const vals = {
       pawn: 1,
+      camel: 2,
       knight: 3,
       bishop: 3,
       king: 4,
@@ -711,6 +725,11 @@ const gameReducer = (game, action) => {
         // check for capture
         const pieceAtPosition = getPieceAtPosition(game, position);
         if (pieceAtPosition && pieceAtPosition.id != id) {
+          action.capture = {
+            color: pieceAtPosition.color,
+            pieceType: pieceAtPosition.type,
+            id: pieceAtPosition.id
+          };
           game = removePiece(game, pieceAtPosition);
           game.colorValues[pieceAtPosition.color] -= config.pieceToValue(pieceAtPosition === null || pieceAtPosition === void 0 ? void 0 : pieceAtPosition.type, isMinimax);
         }
@@ -726,6 +745,9 @@ const gameReducer = (game, action) => {
               game.colorValues[pieceToMove.color] += config.pieceToValue(pieceToMove.type, isMinimax);
             }
           }
+          action.prevPosition = {
+            ...pieceToMove.position
+          };
           pieceToMove.position = position;
           game.moveHistory = [...game.moveHistory, action];
         }
@@ -741,12 +763,48 @@ const gameReducer = (game, action) => {
           legalMoves
         };
       }
+    case 'UNDO':
+      {
+        const {
+          isMinimax
+        } = action;
+        const moveAction = game.moveHistory.pop();
+        if (!moveAction) return {
+          ...game
+        };
+        const piece = getPieceByID(game, moveAction.id);
+
+        // deployment
+        if (piece.color == 'white' && moveAction.prevPosition.y == 11 || piece.color == 'black' && moveAction.prevPosition.y == 0) {
+          const pieceAtPosition = getPieceAtPosition(game, moveAction.prevPosition);
+          game = removePiece(game, pieceAtPosition);
+          game.colorValues[piece.color] -= config.pieceToValue(piece.type, isMinimax);
+        }
+        piece.position = moveAction.prevPosition;
+        if (game.moveHistory.length > 0) {
+          game.prevPiecePosition = {
+            ...game.moveHistory[game.moveHistory.length - 1].prevPosition
+          };
+        }
+
+        // capture
+        if (moveAction.capture) {
+          const {
+            color,
+            pieceType,
+            id
+          } = moveAction.capture;
+          addPiece(game, color, pieceType, moveAction.position, id);
+          game.colorValues[color] += config.pieceToValue(pieceType, isMinimax);
+        }
+        return game;
+      }
   }
   return game;
 };
-const addPiece = (game, color, type, position) => {
+const addPiece = (game, color, type, position, id) => {
   game.pieces = [...game.pieces, {
-    id: game.nextPieceID,
+    id: id ? id : game.nextPieceID,
     color,
     type,
     position: {
@@ -844,20 +902,6 @@ const rootReducer = (state, action) => {
     case 'DISMISS_MODAL':
       return modalReducer(state, action);
     case 'UNDO':
-      {
-        var _state$game2;
-        // NOTE: the actual undoing of the move happens on the server side
-        const useMoveRules = state === null || state === void 0 ? void 0 : (_state$game2 = state.game) === null || _state$game2 === void 0 ? void 0 : _state$game2.useMoveRules;
-        state.game = {
-          ...initGameState(),
-          moveHistory: state.game.moveHistory,
-          useMoveRules: useMoveRules != null ? useMoveRules : true
-        };
-        state.game.moveHistory.pop();
-        return {
-          ...state
-        };
-      }
     case 'SET':
     case 'SET_LEGAL_MOVES':
     case 'SET_USE_MOVE_RULES':
@@ -980,9 +1024,17 @@ const deploymentBoard = () => {
       id: pieceID++
     }, {
       color: 'white',
-      type: 'pawn',
+      type: 'camel',
       position: {
         x: 7,
+        y: 11
+      },
+      id: pieceID++
+    }, {
+      color: 'white',
+      type: 'pawn',
+      position: {
+        x: 8,
         y: 11
       },
       id: pieceID++
@@ -1044,9 +1096,17 @@ const deploymentBoard = () => {
       id: pieceID++
     }, {
       color: 'black',
-      type: 'pawn',
+      type: 'camel',
       position: {
         x: 7,
+        y: 0
+      },
+      id: pieceID++
+    }, {
+      color: 'black',
+      type: 'pawn',
+      position: {
+        x: 8,
         y: 0
       },
       id: pieceID++
@@ -1382,8 +1442,9 @@ function minimax(game, depth, alpha, beta, isMaximizingPlayer) {
     let bestValue = -Infinity;
     let bestMove = null;
     for (let move of possibleMoves(game)) {
-      let gameCopy = applyMoves(game, [move]);
-      const result = minimax(gameCopy, depth - 1, alpha, beta, false);
+      // let gameCopy = applyMoves(game, [move]);
+      game = gameReducer(game, move);
+      const result = minimax(game, depth - 1, alpha, beta, false);
       // console.log(tabs + move.id + " " + move.position.x + "," + move.position.y + " " +  result.score);
       if (result.score > bestValue) {
         bestValue = result.score;
@@ -1392,6 +1453,10 @@ function minimax(game, depth, alpha, beta, isMaximizingPlayer) {
         bestMove = move;
       }
       alpha = Math.max(alpha, bestValue);
+      game = gameReducer(game, {
+        type: 'UNDO',
+        isMinimax: true
+      });
       if (beta < alpha) {
         // console.log(tabs + alpha + " " + beta);
         break;
@@ -1405,8 +1470,9 @@ function minimax(game, depth, alpha, beta, isMaximizingPlayer) {
     let bestValue = Infinity;
     let bestMove = null;
     for (let move of possibleMoves(game)) {
-      let gameCopy = applyMoves(game, [move]);
-      const result = minimax(gameCopy, depth - 1, alpha, beta, true);
+      // let gameCopy = applyMoves(game, [move]);
+      game = gameReducer(game, move);
+      const result = minimax(game, depth - 1, alpha, beta, true);
       // console.log(tabs + move.id + " " + move.position.x + "," + move.position.y + " " +  result.score);
       if (result.score < bestValue) {
         bestValue = result.score;
@@ -1415,6 +1481,10 @@ function minimax(game, depth, alpha, beta, isMaximizingPlayer) {
         bestMove = move;
       }
       beta = Math.min(beta, bestValue);
+      game = gameReducer(game, {
+        type: 'UNDO',
+        isMinimax: true
+      });
       if (beta < alpha) {
         // console.log(tabs + alpha + " " + beta);
         break;
@@ -1628,6 +1698,9 @@ function getLegalMoves(game, piece) {
     case 'knight':
       legalMoves = getKnightMoves(game, x, y);
       break;
+    case 'camel':
+      legalMoves = getCamelMoves(game, x, y);
+      break;
     case 'bishop':
       legalMoves = getBishopMoves(game, x, y);
       break;
@@ -1710,6 +1783,33 @@ const getKnightMoves = (game, x, y) => {
   }, {
     x: x + 1,
     y: y + 2
+  }];
+};
+const getCamelMoves = (game, x, y) => {
+  return [{
+    x: x - 1,
+    y: y - 3
+  }, {
+    x: x + 1,
+    y: y - 3
+  }, {
+    x: x - 3,
+    y: y - 1
+  }, {
+    x: x + 3,
+    y: y - 1
+  }, {
+    x: x - 3,
+    y: y + 1
+  }, {
+    x: x + 3,
+    y: y + 1
+  }, {
+    x: x - 1,
+    y: y + 3
+  }, {
+    x: x + 1,
+    y: y + 3
   }];
 };
 const getRookMoves = (game, x, y) => {
@@ -1902,7 +2002,7 @@ const randomDeploymentByColor = (dispatch, game, value, color) => {
       x,
       y
     }))) continue;
-    const pieceType = oneOf(['pawn', 'pawn', 'pawn', 'pawn', 'knight', 'bishop']);
+    const pieceType = oneOf(['pawn', 'pawn', 'pawn', 'pawn', 'knight', 'bishop', 'camel']);
     valueRemaining -= pieceToValue(pieceType);
     if (valueRemaining < 0) break;
     dispatch({
@@ -1943,25 +2043,27 @@ const choosePiece = (valueRemaining, placedKing) => {
   let possiblePieces = [];
   switch (valueRemaining) {
     case 1:
-    case 2:
       possiblePieces.push('pawn');
+      break;
+    case 2:
+      possiblePieces.push('camel');
       break;
     case 3:
       possiblePieces = possiblePieces.concat(['knight', 'knight', 'bishop']);
       break;
     case 4:
-      possiblePieces = possiblePieces.concat(['knight', 'bishop', 'pawn', 'king']);
+      possiblePieces = possiblePieces.concat(['knight', 'bishop', 'camel', 'pawn', 'king']);
       break;
     case 5:
     case 6:
     case 7:
-      possiblePieces = possiblePieces.concat(['knight', 'bishop', 'rook', 'king']);
+      possiblePieces = possiblePieces.concat(['knight', 'bishop', 'rook', 'king', 'camel']);
       break;
     case 8:
-      possiblePieces = possiblePieces.concat(['knight', 'bishop', 'rook', 'king', 'knishop', 'knook']);
+      possiblePieces = possiblePieces.concat(['knight', 'bishop', 'rook', 'king', 'knishop', 'knook', 'camel']);
       break;
     default:
-      possiblePieces = possiblePieces.concat(['knight', 'bishop', 'rook', 'king', 'knishop', 'knook', 'queen']);
+      possiblePieces = possiblePieces.concat(['knight', 'bishop', 'rook', 'king', 'knishop', 'knook', 'queen', 'camel']);
       break;
   }
   if (valueRemaining < 14 && !placedKing) {

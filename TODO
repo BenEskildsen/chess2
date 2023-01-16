@@ -1,31 +1,39 @@
 
 - - - - - PLAYTEST - - - - - -
-  - when I look away sometimes pieces get redeployed
-    - and undo can take them all away
-  - mobile issues:
-    - too far down and too narrow
-    - show/hide deployment options doesn't work
-    - buttons overlap with score
-
-
-- - - - - BUTTONS - - - - -
-  - button that runs minimax on next player's move
-    - fix it so that it can play more random moves
-    - evaluateBoard function
-      - check, checkmate
-      - 1 > control of center, pawn structure, activity (nums moves for each side)
-    - fails when a player runs out of pieces
-  - button to auto-play AI moves with certain delay (for one/boths sides)
-    - AI bar?
-
-
-- - - - - FIX - - - - - -
-  - sometimes placed piece doesn't snap
 
 
 - - - - - FEATURES - - - - -
   - ticker for players joining/leaving
+  - right click to highlight a square
+    - game state, server state, server action
+    - UI of highlighted square on deployment board
   - allow rotating the board for the black player
+
+
+- - - - - - AI - - - - - - -
+  - evaluateBoard function
+    - check, checkmate
+    - 1 > value per piece per square
+  - fails when a player runs out of pieces
+  - use a worker
+    - update make file to compile the worker
+    - worker file maintaining its own game state
+    - send message to worker on moves
+    - send message back when it decides moves
+  - AI bar
+    - button to auto-play AI moves with certain delay (for one/boths sides)
+    - search depth
+
+
+- - - - - FIX - - - - - -
+  - sometimes placed piece doesn't snap
+  - when I look away sometimes pieces get redeployed
+
+
+- - - - - - MOBILE - - - - - -
+  - too far down and too narrow
+  - show/hide deployment options doesn't work
+  - buttons overlap with score
 
 
 - - - - - - LATER - - - - - - -

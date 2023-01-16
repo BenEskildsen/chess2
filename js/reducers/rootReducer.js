@@ -31,17 +31,7 @@ const rootReducer = (state, action) => {
     case 'SET_MODAL':
     case 'DISMISS_MODAL':
       return modalReducer(state, action);
-    case 'UNDO': {
-      // NOTE: the actual undoing of the move happens on the server side
-      const useMoveRules = state?.game?.useMoveRules;
-      state.game = {
-        ...initGameState(),
-        moveHistory: state.game.moveHistory,
-        useMoveRules: useMoveRules != null ? useMoveRules : true,
-      };
-      state.game.moveHistory.pop();
-      return {...state};
-    }
+    case 'UNDO':
     case 'SET':
     case 'SET_LEGAL_MOVES':
     case 'SET_USE_MOVE_RULES':
@@ -97,7 +87,8 @@ const deploymentBoard = () => {
       {color: 'white', type: 'king', position: {x: 4, y: 11}, id: pieceID++},
       {color: 'white', type: 'knook', position: {x: 5, y: 11}, id: pieceID++},
       {color: 'white', type: 'knishop', position: {x: 6, y: 11}, id: pieceID++},
-      {color: 'white', type: 'pawn', position: {x: 7, y: 11}, id: pieceID++},
+      {color: 'white', type: 'camel', position: {x: 7, y: 11}, id: pieceID++},
+      {color: 'white', type: 'pawn', position: {x: 8, y: 11}, id: pieceID++},
 
       {color: 'black', type: 'rook', position: {x: 0, y: 0}, id: pieceID++},
       {color: 'black', type: 'knight', position: {x: 1, y: 0}, id: pieceID++},
@@ -106,7 +97,8 @@ const deploymentBoard = () => {
       {color: 'black', type: 'king', position: {x: 4, y: 0}, id: pieceID++},
       {color: 'black', type: 'knook', position: {x: 5, y: 0}, id: pieceID++},
       {color: 'black', type: 'knishop', position: {x: 6, y: 0}, id: pieceID++},
-      {color: 'black', type: 'pawn', position: {x: 7, y: 0}, id: pieceID++},
+      {color: 'black', type: 'camel', position: {x: 7, y: 0}, id: pieceID++},
+      {color: 'black', type: 'pawn', position: {x: 8, y: 0}, id: pieceID++},
 
       // {color: 'white', type: 'pawn', position: {x: 2, y: 8}, id: pieceID++},
       // {color: 'white', type: 'pawn', position: {x: 3, y: 8}, id: pieceID++},

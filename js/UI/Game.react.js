@@ -30,7 +30,7 @@ function Game(props) {
 
   const background = useMemo(() => {
     return game.boardType == 'deployment' ? <DeploymentBoard game={game} /> : null;
-  }, [game.boardType, game.legalMoves.length, game.moveHistory]);
+  }, [game.boardType, game.legalMoves.length, game.moveHistory.length]);
 
   return (
     <div
@@ -164,7 +164,7 @@ const DeploymentBoard = (props) => {
 const makePiece = (game, piece) => {
   const pxWidth = config.pixelSize.width / game.gridSize.width;
   const pxHeight = config.pixelSize.height / game.gridSize.height;
-  const spriteSheet = {pxWidth, pxHeight, imagesAcross: 8, imagesDown: 2};
+  const spriteSheet = {pxWidth, pxHeight, imagesAcross: 10, imagesDown: 2};
   // const sprite = useMemo(() => {
   //   return (
   //     <SpriteSheet src={'../chess2.png'}

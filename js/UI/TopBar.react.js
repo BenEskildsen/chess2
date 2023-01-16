@@ -1,6 +1,7 @@
 
 const React = require('react');
 const {oneOf} = require('bens_utils').stochastic;
+const {deepCopy} = require('bens_utils').helpers;
 const {
   Button, InfoCard, Divider,
   Plot, plotReducer,
@@ -78,11 +79,16 @@ const TopBar = (props) => {
             // const moves = possibleMoves(game, []);
             // dispatch(oneOf(moves));
 
-            const {score, move} = minimax(game, 4, -Infinity, Infinity,
+            const startTime = Date.now();
+            const {score, move} = minimax(deepCopy(game), 4, -Infinity, Infinity,
               getColorOfNextMove(game) == 'white',
             );
             // console.log(score, move);
-            console.log("positions evaluated", window.positionsEvaluated);
+            const totalTime = Date.now() - startTime;
+            console.log(
+              "positions evaluated", window.positionsEvaluated,
+              "in " + (totalTime / 1000).toFixed(3) + " seconds"
+            );
             window.positionsEvaluated = 0;
             dispatch({...move, isMinimax: false});
           }}

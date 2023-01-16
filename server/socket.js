@@ -78,9 +78,6 @@ const initIO = (io, sessions, socketClients, clientToSession) => {
         case 'UNDO': {
           session.moveHistory.pop();
           emitToSession(sessions, socketClients, action, session.id, clientID);
-          for (const action of session.moveHistory) {
-            emitToSession(sessions, socketClients, action, session.id, clientID, true);
-          }
           break;
         }
         case 'SET_USE_MOVE_RULES': {
