@@ -3,6 +3,10 @@
 
 
 - - - - - FEATURES - - - - -
+  - Amazon
+    - add to spritesheet
+    - add to config
+    - add to moves
   - ticker for players joining/leaving
   - right click to highlight a square
     - game state, server state, server action
@@ -32,7 +36,6 @@
 
 - - - - - - MOBILE - - - - - -
   - too far down and too narrow
-  - show/hide deployment options doesn't work
   - buttons overlap with score
 
 
