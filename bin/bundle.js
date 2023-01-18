@@ -192,18 +192,10 @@ const makePiece = (game, piece) => {
     imagesAcross: 10,
     imagesDown: 2
   };
-  // const sprite = useMemo(() => {
-  //   return (
-  //     <SpriteSheet src={'../chess2.png'}
-  //       offset={config.pieceToOffset[piece.color + "_" + piece.type]}
-  //       spriteSheet={spriteSheet}
-  //     />
-  //   );
-  // }, []);
   return {
     ...piece,
     sprite: /*#__PURE__*/React.createElement(SpriteSheet, {
-      src: '../chess2.png',
+      src: config.spriteSheet,
       offset: config.pieceToOffset[piece.color + "_" + piece.type],
       spriteSheet: spriteSheet
     })
@@ -503,12 +495,18 @@ const DeploymentBar = props => {
 };
 module.exports = TopBar;
 },{"../clientToServer":4,"../config":5,"../selectors/minimax":10,"../selectors/moves":11,"../selectors/selectors":12,"../thunks/deployPieces":13,"bens_ui_components":36,"bens_utils":43,"react":51}],4:[function(require,module,exports){
+const {
+  config
+} = require('./config');
+
 /**
  * Socket.io functions
  */
 let socket = null;
 const setupSocket = dispatch => {
-  socket = io();
+  socket = io(config.URL, {
+    path: config.path
+  });
   socket.on('receiveAction', action => {
     // console.log("received", action);
     dispatch(action);
@@ -526,8 +524,11 @@ module.exports = {
   dispatchToServer,
   setupSocket
 };
-},{}],5:[function(require,module,exports){
+},{"./config":5}],5:[function(require,module,exports){
 const config = {
+  spriteSheet: '../chess2/chess2.png',
+  URL: "https://benhub.io",
+  path: "/chess2/socket.io",
   pixelSize: {
     width: Math.min(700, window.innerWidth),
     height: Math.min(700, window.innerWidth)

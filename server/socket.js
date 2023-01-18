@@ -23,7 +23,12 @@ const initSocketServer = (expressApp) => {
   const clientToSession = {};
 
   const server = http.createServer(expressApp);
-  const io = new Server(server);
+  const io = new Server(server, {
+    cors: {
+      origin: "https://www.benhub.io",
+      methods: ["GET", "POST"],
+    },
+  });
   initIO(io, sessions, socketClients, clientToSession);
   return server;
 }

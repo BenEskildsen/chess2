@@ -165,16 +165,8 @@ const makePiece = (game, piece) => {
   const pxWidth = config.pixelSize.width / game.gridSize.width;
   const pxHeight = config.pixelSize.height / game.gridSize.height;
   const spriteSheet = {pxWidth, pxHeight, imagesAcross: 10, imagesDown: 2};
-  // const sprite = useMemo(() => {
-  //   return (
-  //     <SpriteSheet src={'../chess2.png'}
-  //       offset={config.pieceToOffset[piece.color + "_" + piece.type]}
-  //       spriteSheet={spriteSheet}
-  //     />
-  //   );
-  // }, []);
   return {...piece, sprite: (
-    <SpriteSheet src={'../chess2.png'}
+    <SpriteSheet src={config.spriteSheet}
       offset={config.pieceToOffset[piece.color + "_" + piece.type]}
       spriteSheet={spriteSheet}
     />

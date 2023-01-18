@@ -1,4 +1,10 @@
 const config = {
+
+  spriteSheet: '../chess2/chess2.png',
+
+  URL: "https://benhub.io",
+  path: "/chess2/socket.io",
+
   pixelSize: {
     width: Math.min(700, window.innerWidth),
     height: Math.min(700, window.innerWidth),

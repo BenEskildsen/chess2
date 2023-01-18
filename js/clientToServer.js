@@ -1,10 +1,12 @@
 
+const {config} = require('./config');
+
 /**
  * Socket.io functions
  */
 let socket = null;
 const setupSocket = (dispatch) => {
-  socket = io();
+  socket = io(config.URL, {path: config.path});
   socket.on('receiveAction', (action) => {
     // console.log("received", action);
     dispatch(action);
