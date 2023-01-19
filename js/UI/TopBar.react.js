@@ -26,10 +26,11 @@ const {
 const {
   possibleMoves, minimax, getColorOfNextMove,
 } = require('../selectors/minimax');
+const {isHost, getSession} = require('../selectors/sessions');
 const {useState, useMemo, useEffect, useReducer} = React;
 
 const TopBar = (props) => {
-  const {state, getState, dispatch} = props;
+  const {state, getState, dispatch, isRotated, setIsRotated} = props;
   const {game} = getState();
 
   return (
@@ -45,28 +46,18 @@ const TopBar = (props) => {
         }}
       >
         <Button
-          label="Restart"
           style={{height: 50}}
-          onClick={() => {
-            const action = {type: 'START', screen: 'GAME'};
-            dispatch(action);
-            dispatchToServer(action);
-          }}
+          label="Options"
+          onClick={() => dispatch({
+            type: 'SET_MODAL',
+            modal: <OptionsModal {...props} isRotated={isRotated} setIsRotated={setIsRotated} />
+          })}
         />
         <Button
           label="Undo Move"
           style={{height: 50}}
           onClick={() => {
             const action = {type: 'UNDO'};
-            dispatch(action);
-            dispatchToServer(action);
-          }}
-        />
-        <Button
-          label={game.useMoveRules ? "Turn Off Rules" : "Turn On Rules"}
-          style={{height: 50}}
-          onClick={() => {
-            const action = {type: 'SET_USE_MOVE_RULES', useMoveRules: !game.useMoveRules};
             dispatch(action);
             dispatchToServer(action);
           }}
@@ -102,6 +93,83 @@ const TopBar = (props) => {
       <DeploymentBar {...props} />
     </div>
   );
+}
+
+const OptionsModal = (props) => {
+  const {state, getState, dispatch, isRotated, setIsRotated} = props;
+  const {game} = state;
+
+  let deleteGameButton = null;
+  if (isHost(state)) {
+    deleteGameButton = (
+      <Button
+        label="End (Delete) Game"
+        style={{height: 50, width: '85%', marginBottom: 4}}
+        onClick={() => {
+          dispatch({type: 'DISMISS_MODAL'});
+          dispatchToServer({type: 'END_SESSION', sessionID: getSession(state).id});
+        }}
+      />
+    );
+  }
+
+  return <Modal
+    title=""
+    body={
+      <div
+        style={{textAlign: 'center'}}
+      >
+        <div style={{fontSize: 30}}><b>Options</b></div>
+        <Button
+          label="Rotate"
+          style={{height: 50, width: '85%', marginBottom: 4}}
+          onClick={() => {
+            dispatch({type: 'DISMISS_MODAL'});
+            setIsRotated(!isRotated);
+          }}
+        />
+        <Button
+          label={game.useMoveRules ? "Turn Off Rules" : "Turn On Rules"}
+          style={{height: 50, width: '85%', marginBottom: 4}}
+          onClick={() => {
+            dispatch({type: 'DISMISS_MODAL'});
+            const action = {type: 'SET_USE_MOVE_RULES', useMoveRules: !game.useMoveRules};
+            dispatch(action);
+            dispatchToServer(action);
+          }}
+        />
+        <Button
+          label="Restart"
+          style={{height: 50, width: '85%', marginBottom: 4}}
+          onClick={() => {
+            dispatch({type: 'DISMISS_MODAL'});
+            setIsRotated(false)
+            const action = {type: 'START', screen: 'GAME'};
+            dispatch(action);
+            dispatchToServer(action);
+          }}
+        />
+        {deleteGameButton}
+        <Button
+          label="Leave Game"
+          style={{height: 50, width: '85%', marginBottom: 4}}
+          onClick={() => {
+            dispatch({type: 'DISMISS_MODAL'});
+            dispatch({screen: 'LOBBY'});
+            dispatchToServer({type: 'LEAVE_SESSION'});
+          }}
+        />
+        <Button
+          label="Back to Game"
+          style={{height: 50, width: '85%', marginTop: 8}}
+          onClick={() => {
+            dispatch({type: 'DISMISS_MODAL'});
+          }}
+        />
+      </div>
+    }
+    buttons={[]}
+  />;
 }
 
 const DeploymentBar = (props) => {

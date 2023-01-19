@@ -1,4 +1,5 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
+function _extends() { _extends = Object.assign ? Object.assign.bind() : function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; }; return _extends.apply(this, arguments); }
 const React = require('react');
 const {
   Button,
@@ -44,16 +45,14 @@ function Game(props) {
     getState
   } = props;
   const game = state.game;
-
-  // mutliplayer
-  useEffect(() => {
-    setupSocket(dispatch);
-  }, []);
+  const [isRotated, setIsRotated] = useState(false);
+  // HACK: I can't figure out how to get the eventHandlers in Board to know about isRotated
+  window.isRotated = isRotated;
   const background = useMemo(() => {
     return game.boardType == 'deployment' ? /*#__PURE__*/React.createElement(DeploymentBoard, {
       game: game
     }) : null;
-  }, [game.boardType, game.legalMoves.length, game.moveHistory.length]);
+  }, [game.boardType, game.legalMoves.length, game.moveHistory.length, isRotated]);
   return /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
@@ -62,7 +61,10 @@ function Game(props) {
       backgroundColor: 'lightgrey',
       flexDirection: 'column'
     }
-  }, /*#__PURE__*/React.createElement(TopBar, props), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(TopBar, _extends({
+    isRotated: isRotated,
+    setIsRotated: setIsRotated
+  }, props)), /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       justifyContent: 'center',
@@ -73,7 +75,9 @@ function Game(props) {
     background: background,
     pixelSize: config.pixelSize,
     gridSize: game.gridSize,
-    onPieceMove: (id, position) => {
+    onPieceMove: (id, pos) => {
+      const game = getState().game;
+      const position = rotateCoord(pos, game.gridSize);
       dispatch({
         type: 'MOVE_PIECE',
         id,
@@ -90,16 +94,19 @@ function Game(props) {
         legalMoves: []
       }));
     },
-    onPiecePickup: (id, position) => {
+    onPiecePickup: (id, pos) => {
       const game = getState().game;
+      const position = rotateCoord(pos, game.gridSize);
       const piece = getPieceByID(game, id);
       dispatch({
         type: 'SET_LEGAL_MOVES',
         legalMoves: getLegalMoves(game, piece)
       });
     },
-    isMoveAllowed: (id, position) => {
+    isMoveAllowed: (id, pos) => {
       const game = getState().game;
+      console.log("is move allowed", isRotated);
+      const position = rotateCoord(pos, game.gridSize);
       const piece = getPieceByID(game, id);
       const pieceAtPosition = getPieceAtPosition(game, position);
       if (pieceAtPosition != null && pieceAtPosition.color == piece.color) {
@@ -111,6 +118,14 @@ function Game(props) {
     pieces: game.pieces.map(p => makePiece(game, p))
   })));
 }
+const rotateCoord = (pos, size) => {
+  if (!pos) return pos;
+  if (!window.isRotated) return pos;
+  return {
+    x: size.width - pos.x - 1,
+    y: size.height - pos.y - 1
+  };
+};
 const DeploymentBoard = props => {
   var _moveHistory;
   const {
@@ -129,7 +144,8 @@ const DeploymentBoard = props => {
   const moveIndicators = [];
   const squareHeight = config.pixelSize.height / gridSize.height;
   const squareWidth = config.pixelSize.width / gridSize.width;
-  for (const move of legalMoves) {
+  for (const m of legalMoves) {
+    const move = rotateCoord(m, gridSize);
     moveIndicators.push( /*#__PURE__*/React.createElement("div", {
       key: 'move_' + move.x + ',' + move.y,
       style: {
@@ -144,8 +160,8 @@ const DeploymentBoard = props => {
       }
     }));
   }
-  const move = (_moveHistory = moveHistory[moveHistory.length - 1]) === null || _moveHistory === void 0 ? void 0 : _moveHistory.position;
-  const prevPos = game.prevPiecePosition;
+  const move = rotateCoord((_moveHistory = moveHistory[moveHistory.length - 1]) === null || _moveHistory === void 0 ? void 0 : _moveHistory.position, gridSize);
+  const prevPos = rotateCoord(game.prevPiecePosition, gridSize);
   return /*#__PURE__*/React.createElement("div", {
     style: {}
   }, /*#__PURE__*/React.createElement(CheckerBackground, {
@@ -194,6 +210,7 @@ const makePiece = (game, piece) => {
   };
   return {
     ...piece,
+    position: rotateCoord(piece.position, game.gridSize),
     sprite: /*#__PURE__*/React.createElement(SpriteSheet, {
       src: config.spriteSheet,
       offset: config.pieceToOffset[piece.color + "_" + piece.type],
@@ -217,13 +234,118 @@ function registerHotkeys(dispatch) {
   });
 }
 module.exports = Game;
-},{"../clientToServer":4,"../config":5,"../selectors/moves":11,"../selectors/selectors":12,"../thunks/deployPieces":13,"./TopBar.react":3,"bens_ui_components":36,"react":51}],2:[function(require,module,exports){
+},{"../clientToServer":5,"../config":6,"../selectors/moves":12,"../selectors/selectors":13,"../thunks/deployPieces":15,"./TopBar.react":4,"bens_ui_components":38,"react":53}],2:[function(require,module,exports){
 const React = require('react');
 const {
   Button,
+  InfoCard,
+  Divider,
+  Plot,
+  plotReducer,
+  Modal,
+  Indicator,
+  Board,
+  SpriteSheet,
+  TextField,
+  CheckerBackground
+} = require('bens_ui_components');
+const {
+  dispatchToServer
+} = require('../clientToServer');
+const {
+  useEffect,
+  useState,
+  useMemo
+} = React;
+const Lobby = props => {
+  const {
+    dispatch,
+    state,
+    getState
+  } = props;
+  const sessionCards = [];
+  for (const sessionID in state.sessions) {
+    sessionCards.push( /*#__PURE__*/React.createElement(SessionCard, {
+      key: "sessionCard_" + sessionID,
+      session: state.sessions[sessionID]
+    }));
+  }
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 300,
+      margin: 'auto',
+      marginTop: 100
+    }
+  }, /*#__PURE__*/React.createElement(CreateGameCard, null), sessionCards);
+};
+const CreateGameCard = props => {
+  const [name, setName] = useState('');
+  return /*#__PURE__*/React.createElement(InfoCard, {
+    style: {
+      width: 300
+    }
+  }, "Game Name:\xA0", /*#__PURE__*/React.createElement(TextField, {
+    value: name,
+    onChange: setName
+  }), /*#__PURE__*/React.createElement(Button, {
+    label: "Create Game",
+    style: {
+      width: 300,
+      height: 30,
+      marginTop: 8
+    },
+    onClick: () => {
+      dispatchToServer({
+        type: 'CREATE_SESSION',
+        name: name != '' ? name : null
+      });
+    }
+  }));
+};
+const SessionCard = props => {
+  const {
+    session
+  } = props;
+  const {
+    id,
+    name,
+    clients
+  } = session;
+  return /*#__PURE__*/React.createElement(InfoCard, {
+    style: {
+      width: 300
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: 'center'
+    }
+  }, /*#__PURE__*/React.createElement("b", null, name)), "Players: ", clients.length, /*#__PURE__*/React.createElement(Button, {
+    style: {
+      width: 300,
+      height: 30
+    },
+    label: "Join Game",
+    onClick: () => {
+      dispatchToServer({
+        type: 'JOIN_SESSION',
+        sessionID: id
+      });
+    }
+  }));
+};
+module.exports = Lobby;
+},{"../clientToServer":5,"bens_ui_components":38,"react":53}],3:[function(require,module,exports){
+const React = require('react');
+const {
+  Button,
+  InfoCard,
   Modal
 } = require('bens_ui_components');
 const Game = require('./Game.react');
+const Lobby = require('./Lobby.react');
+const {
+  setupSocket
+} = require('../clientToServer');
 const {
   useEnhancedReducer
 } = require('bens_ui_components');
@@ -235,17 +357,22 @@ const {
   useState,
   useMemo
 } = React;
-// const Lobby = require('./Lobby.react');
-
 function Main(props) {
   const [state, dispatch, getState] = useEnhancedReducer(rootReducer, {
     screen: 'LOBBY'
   });
   window.getState = getState;
+
+  // mutliplayer
+  useEffect(() => {
+    setupSocket(dispatch);
+  }, []);
   let content = null;
   if (state.screen === 'LOBBY') {
     content = /*#__PURE__*/React.createElement(Lobby, {
-      dispatch: dispatch
+      dispatch: dispatch,
+      state: getState(),
+      getState: getState
     });
   } else if (state.screen === 'GAME') {
     content = /*#__PURE__*/React.createElement(Game, {
@@ -256,32 +383,9 @@ function Main(props) {
   }
   return /*#__PURE__*/React.createElement(React.Fragment, null, content, state.modal);
 }
-function Lobby(props) {
-  const {
-    dispatch
-  } = props;
-  return /*#__PURE__*/React.createElement("div", {
-    style: {
-      width: 300,
-      margin: 'auto',
-      marginTop: 150
-    }
-  }, /*#__PURE__*/React.createElement(Button, {
-    label: "Play",
-    style: {
-      width: 300,
-      height: 30
-    },
-    onClick: () => {
-      dispatch({
-        type: 'START',
-        screen: 'GAME'
-      });
-    }
-  }));
-}
 module.exports = Main;
-},{"../reducers/rootReducer":9,"./Game.react":1,"bens_ui_components":36,"react":51}],3:[function(require,module,exports){
+},{"../clientToServer":5,"../reducers/rootReducer":10,"./Game.react":1,"./Lobby.react":2,"bens_ui_components":38,"react":53}],4:[function(require,module,exports){
+function _extends() { _extends = Object.assign ? Object.assign.bind() : function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; }; return _extends.apply(this, arguments); }
 const React = require('react');
 const {
   oneOf
@@ -329,6 +433,10 @@ const {
   getColorOfNextMove
 } = require('../selectors/minimax');
 const {
+  isHost,
+  getSession
+} = require('../selectors/sessions');
+const {
   useState,
   useMemo,
   useEffect,
@@ -338,7 +446,9 @@ const TopBar = props => {
   const {
     state,
     getState,
-    dispatch
+    dispatch,
+    isRotated,
+    setIsRotated
   } = props;
   const {
     game
@@ -353,18 +463,17 @@ const TopBar = props => {
       alignItems: 'center'
     }
   }, /*#__PURE__*/React.createElement(Button, {
-    label: "Restart",
     style: {
       height: 50
     },
-    onClick: () => {
-      const action = {
-        type: 'START',
-        screen: 'GAME'
-      };
-      dispatch(action);
-      dispatchToServer(action);
-    }
+    label: "Options",
+    onClick: () => dispatch({
+      type: 'SET_MODAL',
+      modal: /*#__PURE__*/React.createElement(OptionsModal, _extends({}, props, {
+        isRotated: isRotated,
+        setIsRotated: setIsRotated
+      }))
+    })
   }), /*#__PURE__*/React.createElement(Button, {
     label: "Undo Move",
     style: {
@@ -373,19 +482,6 @@ const TopBar = props => {
     onClick: () => {
       const action = {
         type: 'UNDO'
-      };
-      dispatch(action);
-      dispatchToServer(action);
-    }
-  }), /*#__PURE__*/React.createElement(Button, {
-    label: game.useMoveRules ? "Turn Off Rules" : "Turn On Rules",
-    style: {
-      height: 50
-    },
-    onClick: () => {
-      const action = {
-        type: 'SET_USE_MOVE_RULES',
-        useMoveRules: !game.useMoveRules
       };
       dispatch(action);
       dispatchToServer(action);
@@ -415,6 +511,131 @@ const TopBar = props => {
       });
     }
   }), /*#__PURE__*/React.createElement("div", null, "\xA0 White Score: ", game.colorValues['white']), /*#__PURE__*/React.createElement("div", null, "\xA0 Black Score: ", game.colorValues['black'])), /*#__PURE__*/React.createElement(DeploymentBar, props));
+};
+const OptionsModal = props => {
+  const {
+    state,
+    getState,
+    dispatch,
+    isRotated,
+    setIsRotated
+  } = props;
+  const {
+    game
+  } = state;
+  let deleteGameButton = null;
+  if (isHost(state)) {
+    deleteGameButton = /*#__PURE__*/React.createElement(Button, {
+      label: "End (Delete) Game",
+      style: {
+        height: 50,
+        width: '85%',
+        marginBottom: 4
+      },
+      onClick: () => {
+        dispatch({
+          type: 'DISMISS_MODAL'
+        });
+        dispatchToServer({
+          type: 'END_SESSION',
+          sessionID: getSession(state).id
+        });
+      }
+    });
+  }
+  return /*#__PURE__*/React.createElement(Modal, {
+    title: "",
+    body: /*#__PURE__*/React.createElement("div", {
+      style: {
+        textAlign: 'center'
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 30
+      }
+    }, /*#__PURE__*/React.createElement("b", null, "Options")), /*#__PURE__*/React.createElement(Button, {
+      label: "Rotate",
+      style: {
+        height: 50,
+        width: '85%',
+        marginBottom: 4
+      },
+      onClick: () => {
+        dispatch({
+          type: 'DISMISS_MODAL'
+        });
+        setIsRotated(!isRotated);
+      }
+    }), /*#__PURE__*/React.createElement(Button, {
+      label: game.useMoveRules ? "Turn Off Rules" : "Turn On Rules",
+      style: {
+        height: 50,
+        width: '85%',
+        marginBottom: 4
+      },
+      onClick: () => {
+        dispatch({
+          type: 'DISMISS_MODAL'
+        });
+        const action = {
+          type: 'SET_USE_MOVE_RULES',
+          useMoveRules: !game.useMoveRules
+        };
+        dispatch(action);
+        dispatchToServer(action);
+      }
+    }), /*#__PURE__*/React.createElement(Button, {
+      label: "Restart",
+      style: {
+        height: 50,
+        width: '85%',
+        marginBottom: 4
+      },
+      onClick: () => {
+        dispatch({
+          type: 'DISMISS_MODAL'
+        });
+        setIsRotated(false);
+        const action = {
+          type: 'START',
+          screen: 'GAME'
+        };
+        dispatch(action);
+        dispatchToServer(action);
+      }
+    }), deleteGameButton, /*#__PURE__*/React.createElement(Button, {
+      label: "Leave Game",
+      style: {
+        height: 50,
+        width: '85%',
+        marginBottom: 4
+      },
+      onClick: () => {
+        dispatch({
+          type: 'DISMISS_MODAL'
+        });
+        dispatch({
+          screen: 'LOBBY'
+        });
+        dispatchToServer({
+          type: 'LEAVE_SESSION'
+        });
+      }
+    }), /*#__PURE__*/React.createElement(Button, {
+      label: "Back to Game",
+      style: {
+        height: 50,
+        width: '85%',
+        marginTop: 8
+      },
+      onClick: () => {
+        dispatch({
+          type: 'DISMISS_MODAL'
+        });
+      }
+    })),
+    buttons: []
+  });
 };
 const DeploymentBar = props => {
   const {
@@ -494,7 +715,7 @@ const DeploymentBar = props => {
   })));
 };
 module.exports = TopBar;
-},{"../clientToServer":4,"../config":5,"../selectors/minimax":10,"../selectors/moves":11,"../selectors/selectors":12,"../thunks/deployPieces":13,"bens_ui_components":36,"bens_utils":43,"react":51}],4:[function(require,module,exports){
+},{"../clientToServer":5,"../config":6,"../selectors/minimax":11,"../selectors/moves":12,"../selectors/selectors":13,"../selectors/sessions":14,"../thunks/deployPieces":15,"bens_ui_components":38,"bens_utils":45,"react":53}],5:[function(require,module,exports){
 const {
   config
 } = require('./config');
@@ -524,11 +745,12 @@ module.exports = {
   dispatchToServer,
   setupSocket
 };
-},{"./config":5}],5:[function(require,module,exports){
+},{"./config":6}],6:[function(require,module,exports){
+const isLocalHost = false;
 const config = {
-  spriteSheet: '../chess2/chess2.png',
-  URL: "https://benhub.io",
-  path: "/chess2/socket.io",
+  spriteSheet: isLocalHost ? '../chess2.png' : '../chess2/chess2.png',
+  URL: isLocalHost ? null : "https://benhub.io",
+  path: isLocalHost ? null : "/chess2/socket.io",
   pixelSize: {
     width: Math.min(700, window.innerWidth),
     height: Math.min(700, window.innerWidth)
@@ -626,7 +848,7 @@ const config = {
 module.exports = {
   config
 };
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 "use strict";
 
 var _Main = _interopRequireDefault(require("./UI/Main.react"));
@@ -639,7 +861,7 @@ function renderUI(root) {
 const root = _client.default.createRoot(document.getElementById('container'));
 renderUI(root);
 
-},{"./UI/Main.react":2,"react":51,"react-dom/client":47}],7:[function(require,module,exports){
+},{"./UI/Main.react":3,"react":53,"react-dom/client":49}],8:[function(require,module,exports){
 // @flow
 
 const {
@@ -829,7 +1051,7 @@ const removePiece = (game, piece) => {
 module.exports = {
   gameReducer
 };
-},{"../clientToServer":4,"../config":5,"../selectors/selectors":12,"bens_utils":43}],8:[function(require,module,exports){
+},{"../clientToServer":5,"../config":6,"../selectors/selectors":13,"bens_utils":45}],9:[function(require,module,exports){
 const modalReducer = (state, action) => {
   switch (action.type) {
     case 'DISMISS_MODAL':
@@ -853,7 +1075,7 @@ const modalReducer = (state, action) => {
 module.exports = {
   modalReducer
 };
-},{}],9:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 const {
   gameReducer
 } = require('./gameReducer');
@@ -864,11 +1086,107 @@ const {
   config
 } = require('../config');
 const {
+  getSession
+} = require('../selectors/sessions');
+const {
   deepCopy
 } = require('bens_utils').helpers;
 const rootReducer = (state, action) => {
   if (state === undefined) return initState();
   switch (action.type) {
+    case 'CREATE_SESSION':
+      {
+        const {
+          clientID,
+          session
+        } = action;
+        if (clientID != state.clientID) {
+          return {
+            ...state,
+            sessions: {
+              ...state.sessions,
+              [session.id]: {
+                ...session
+              }
+            }
+          };
+        }
+        return {
+          ...state,
+          sessions: {
+            ...state.sessions,
+            [session.id]: session
+          },
+          screen: "GAME",
+          game: {
+            ...initGameState()
+          }
+        };
+      }
+    case 'JOIN_SESSION':
+      {
+        const {
+          sessionID,
+          clientID
+        } = action;
+        const session = state.sessions[sessionID];
+        session.clients.push(clientID);
+        if (clientID != state.clientID) {
+          return {
+            ...state,
+            sessions: {
+              ...state.sessions,
+              [sessionID]: {
+                ...session
+              }
+            }
+          };
+        }
+        return {
+          ...state,
+          sessions: {
+            ...state.sessions,
+            [sessionID]: {
+              ...session
+            }
+          },
+          screen: 'GAME',
+          game: {
+            ...initGameState()
+          }
+        };
+      }
+    case 'UPDATE_SESSION':
+      {
+        const {
+          session
+        } = action;
+        return {
+          ...state,
+          sessions: {
+            ...state.sessions,
+            [session.id]: {
+              ...session
+            }
+          }
+        };
+      }
+    case 'END_SESSION':
+      {
+        var _getSession;
+        const {
+          sessionID
+        } = action;
+        if (((_getSession = getSession(state)) === null || _getSession === void 0 ? void 0 : _getSession.id) == sessionID) {
+          state.screen = 'LOBBY';
+          state.game = null;
+          state.modal = null;
+        }
+        delete state.sessions[sessionID];
+        return {
+          ...state
+        };
+      }
     case 'START':
       {
         var _state$game;
@@ -1412,7 +1730,7 @@ const regularBoard = () => {
 module.exports = {
   rootReducer
 };
-},{"../config":5,"./gameReducer":7,"./modalReducer":8,"bens_utils":43}],10:[function(require,module,exports){
+},{"../config":6,"../selectors/sessions":14,"./gameReducer":8,"./modalReducer":9,"bens_utils":45}],11:[function(require,module,exports){
 const {
   getPieceAtPosition,
   getPieceByID
@@ -1552,7 +1870,7 @@ module.exports = {
   possibleMoves,
   getColorOfNextMove
 };
-},{"../reducers/gameReducer":7,"./moves":11,"./selectors":12,"bens_utils":43}],11:[function(require,module,exports){
+},{"../reducers/gameReducer":8,"./moves":12,"./selectors":13,"bens_utils":45}],12:[function(require,module,exports){
 const {
   equals
 } = require('bens_utils').vectors;
@@ -1865,7 +2183,7 @@ module.exports = {
   getLegalMoves,
   insideBoard
 };
-},{"../config":5,"./selectors":12,"bens_utils":43}],12:[function(require,module,exports){
+},{"../config":6,"./selectors":13,"bens_utils":45}],13:[function(require,module,exports){
 const {
   equals
 } = require('bens_utils').vectors;
@@ -1885,7 +2203,24 @@ module.exports = {
   getPieceByID,
   getPieceAtPosition
 };
-},{"bens_utils":43}],13:[function(require,module,exports){
+},{"bens_utils":45}],14:[function(require,module,exports){
+const getSession = state => {
+  for (const id in state.sessions) {
+    const session = state.sessions[id];
+    if (session.clients.includes(state.clientID)) return session;
+  }
+  return null;
+};
+const isHost = state => {
+  const session = getSession(state);
+  if (!session) return false;
+  return session.clients[0] == state.clientID;
+};
+module.exports = {
+  getSession,
+  isHost
+};
+},{}],15:[function(require,module,exports){
 const {
   oneOf,
   weightedOneOf
@@ -2095,7 +2430,7 @@ module.exports = {
   mirrorDeployment,
   standardDeployment
 };
-},{"../config":5,"../selectors/selectors":12,"bens_utils":43}],14:[function(require,module,exports){
+},{"../config":6,"../selectors/selectors":13,"bens_utils":45}],16:[function(require,module,exports){
 const React = require('react');
 const Button = require('./Button.react');
 const {
@@ -2168,7 +2503,7 @@ const AudioWidget = props => {
   }));
 };
 module.exports = AudioWidget;
-},{"./Button.react":16,"react":51}],15:[function(require,module,exports){
+},{"./Button.react":18,"react":53}],17:[function(require,module,exports){
 function _extends() { _extends = Object.assign ? Object.assign.bind() : function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; }; return _extends.apply(this, arguments); }
 const React = require('react');
 const CheckerBackground = require('./CheckerBackground.react.js');
@@ -2179,12 +2514,6 @@ const {
   useMemo,
   useReducer
 } = React;
-
-/*
- * TODO
- *  - call a function to move a piece
- *  - call a function to add/remove pieces
- */
 
 /**
  *  Props:
@@ -2293,7 +2622,7 @@ const Piece = props => {
   }, props.sprite);
 };
 module.exports = Board;
-},{"./CheckerBackground.react.js":19,"./DragArea.react.js":21,"react":51}],16:[function(require,module,exports){
+},{"./CheckerBackground.react.js":21,"./DragArea.react.js":23,"react":53}],18:[function(require,module,exports){
 const React = require('react');
 const {
   useState,
@@ -2367,7 +2696,7 @@ function Button(props) {
   }, props.label);
 }
 module.exports = Button;
-},{"react":51}],17:[function(require,module,exports){
+},{"react":53}],19:[function(require,module,exports){
 const React = require('react');
 const {
   useEffect,
@@ -2437,7 +2766,7 @@ function Canvas(props) {
   }));
 }
 module.exports = React.memo(Canvas);
-},{"react":51}],18:[function(require,module,exports){
+},{"react":53}],20:[function(require,module,exports){
 const React = require('react');
 
 /**
@@ -2470,7 +2799,7 @@ function Checkbox(props) {
   }
 }
 module.exports = Checkbox;
-},{"react":51}],19:[function(require,module,exports){
+},{"react":53}],21:[function(require,module,exports){
 const React = require('react');
 
 /**
@@ -2518,7 +2847,7 @@ const CheckerboardBackground = props => {
   }, squares);
 };
 module.exports = CheckerboardBackground;
-},{"react":51}],20:[function(require,module,exports){
+},{"react":53}],22:[function(require,module,exports){
 const React = require('react');
 function Divider(props) {
   const {
@@ -2534,7 +2863,7 @@ function Divider(props) {
   });
 }
 module.exports = Divider;
-},{"react":51}],21:[function(require,module,exports){
+},{"react":53}],23:[function(require,module,exports){
 const React = require('react');
 const {
   useMouseHandler,
@@ -2782,7 +3111,7 @@ const clampToArea = (dragAreaID, pixel, style) => {
   };
 };
 module.exports = DragArea;
-},{"./hooks":34,"bens_utils":43,"react":51}],22:[function(require,module,exports){
+},{"./hooks":36,"bens_utils":45,"react":53}],24:[function(require,module,exports){
 const React = require('react');
 
 /**
@@ -2815,7 +3144,7 @@ const Dropdown = function (props) {
   }, optionTags);
 };
 module.exports = Dropdown;
-},{"react":51}],23:[function(require,module,exports){
+},{"react":53}],25:[function(require,module,exports){
 const React = require('react');
 const {
   useEffect,
@@ -2861,7 +3190,7 @@ const usePrevious = value => {
   return ref.current;
 };
 module.exports = Indicator;
-},{"react":51}],24:[function(require,module,exports){
+},{"react":53}],26:[function(require,module,exports){
 const React = require('react');
 const InfoCard = props => {
   const overrideStyle = props.style || {};
@@ -2885,7 +3214,7 @@ const InfoCard = props => {
   }, props.children);
 };
 module.exports = InfoCard;
-},{"react":51}],25:[function(require,module,exports){
+},{"react":53}],27:[function(require,module,exports){
 const React = require('react');
 const Button = require('./Button.react');
 const Divider = require('./Divider.react');
@@ -2930,7 +3259,10 @@ function Modal(props) {
       alignItems: 'center',
       justifyContent: 'center',
       width: '100%',
-      height: '100%'
+      height: '100%',
+      top: 0,
+      left: 0,
+      zIndex: 10
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -2961,7 +3293,7 @@ function Modal(props) {
   }, buttonHTML)));
 }
 module.exports = Modal;
-},{"./Button.react":16,"./Divider.react":20,"react":51}],26:[function(require,module,exports){
+},{"./Button.react":18,"./Divider.react":22,"react":53}],28:[function(require,module,exports){
 const React = require('react');
 const {
   useState,
@@ -3043,7 +3375,7 @@ const submitValue = (onChange, nextVal, onlyInt) => {
   }
 };
 module.exports = NumberField;
-},{"react":51}],27:[function(require,module,exports){
+},{"react":53}],29:[function(require,module,exports){
 function _extends() { _extends = Object.assign ? Object.assign.bind() : function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; }; return _extends.apply(this, arguments); }
 /**
  * See ~/Code/teaching/clusters for an example of how to use the plot
@@ -3331,7 +3663,7 @@ const PlotWatcher = props => {
   }));
 };
 module.exports = PlotWatcher;
-},{"./Button.react":16,"./Canvas.react":17,"react":51}],28:[function(require,module,exports){
+},{"./Button.react":18,"./Canvas.react":19,"react":53}],30:[function(require,module,exports){
 const React = require('react');
 const Button = require('./Button.react');
 const Modal = require('./Modal.react');
@@ -3414,7 +3746,7 @@ const quitGameModal = dispatch => {
   });
 };
 module.exports = QuitButton;
-},{"./Button.react":16,"./Modal.react":25,"bens_utils":43,"react":51}],29:[function(require,module,exports){
+},{"./Button.react":18,"./Modal.react":27,"bens_utils":45,"react":53}],31:[function(require,module,exports){
 const React = require('react');
 
 // props:
@@ -3441,7 +3773,7 @@ class RadioPicker extends React.Component {
   }
 }
 module.exports = RadioPicker;
-},{"react":51}],30:[function(require,module,exports){
+},{"react":53}],32:[function(require,module,exports){
 const React = require('react');
 const NumberField = require('./NumberField.react');
 const {
@@ -3511,7 +3843,7 @@ function Slider(props) {
   }), props.noOriginalValue ? null : "(" + originalValue + ")"));
 }
 module.exports = Slider;
-},{"./NumberField.react":26,"react":51}],31:[function(require,module,exports){
+},{"./NumberField.react":28,"react":53}],33:[function(require,module,exports){
 const React = require('react');
 
 /**
@@ -3555,7 +3887,7 @@ const SpriteSheet = props => {
   }));
 };
 module.exports = SpriteSheet;
-},{"react":51}],32:[function(require,module,exports){
+},{"react":53}],34:[function(require,module,exports){
 const React = require('react');
 const Button = require('./Button.react');
 const Dropdown = require('./Dropdown.react');
@@ -3742,7 +4074,7 @@ function Table(props) {
   }, props.hideNumRows ? null : /*#__PURE__*/React.createElement("span", null, "Total Rows: ", rows.length, " Rows Displayed: ", filteredRows.length), /*#__PURE__*/React.createElement("table", null, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, headers)), /*#__PURE__*/React.createElement("tbody", null, rowHTML)));
 }
 module.exports = Table;
-},{"./Button.react":16,"./Dropdown.react":22,"react":51}],33:[function(require,module,exports){
+},{"./Button.react":18,"./Dropdown.react":24,"react":53}],35:[function(require,module,exports){
 const React = require('react');
 
 /**
@@ -3774,7 +4106,7 @@ const TextField = props => {
   });
 };
 module.exports = TextField;
-},{"react":51}],34:[function(require,module,exports){
+},{"react":53}],36:[function(require,module,exports){
 const React = require('react');
 const {
   throttle
@@ -4082,7 +4414,7 @@ module.exports = {
   useCompare,
   usePrevious
 };
-},{"bens_utils":43,"react":51}],35:[function(require,module,exports){
+},{"bens_utils":45,"react":53}],37:[function(require,module,exports){
 // type Point = {
 //   x: number,
 //   y: number,
@@ -4167,7 +4499,7 @@ const plotReducer = (state, action) => {
 module.exports = {
   plotReducer
 };
-},{}],36:[function(require,module,exports){
+},{}],38:[function(require,module,exports){
 
 // const React = require('react');
 // const ReactDOM = require('react-dom');
@@ -4201,7 +4533,7 @@ module.exports = {
 
 
 
-},{"./bin/AudioWidget.react.js":14,"./bin/Board.react.js":15,"./bin/Button.react.js":16,"./bin/Canvas.react.js":17,"./bin/Checkbox.react.js":18,"./bin/CheckerBackground.react.js":19,"./bin/Divider.react.js":20,"./bin/DragArea.react.js":21,"./bin/Dropdown.react.js":22,"./bin/Indicator.react.js":23,"./bin/InfoCard.react.js":24,"./bin/Modal.react.js":25,"./bin/NumberField.react.js":26,"./bin/Plot.react.js":27,"./bin/QuitButton.react.js":28,"./bin/RadioPicker.react.js":29,"./bin/Slider.react.js":30,"./bin/SpriteSheet.react.js":31,"./bin/Table.react.js":32,"./bin/TextField.react.js":33,"./bin/hooks.js":34,"./bin/plotReducer.js":35}],37:[function(require,module,exports){
+},{"./bin/AudioWidget.react.js":16,"./bin/Board.react.js":17,"./bin/Button.react.js":18,"./bin/Canvas.react.js":19,"./bin/Checkbox.react.js":20,"./bin/CheckerBackground.react.js":21,"./bin/Divider.react.js":22,"./bin/DragArea.react.js":23,"./bin/Dropdown.react.js":24,"./bin/Indicator.react.js":25,"./bin/InfoCard.react.js":26,"./bin/Modal.react.js":27,"./bin/NumberField.react.js":28,"./bin/Plot.react.js":29,"./bin/QuitButton.react.js":30,"./bin/RadioPicker.react.js":31,"./bin/Slider.react.js":32,"./bin/SpriteSheet.react.js":33,"./bin/Table.react.js":34,"./bin/TextField.react.js":35,"./bin/hooks.js":36,"./bin/plotReducer.js":37}],39:[function(require,module,exports){
 'use strict';
 
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
@@ -4365,7 +4697,7 @@ module.exports = {
   getEntityPositions: getEntityPositions,
   entityInsideGrid: entityInsideGrid
 };
-},{"./helpers":38,"./math":39,"./vectors":42}],38:[function(require,module,exports){
+},{"./helpers":40,"./math":41,"./vectors":44}],40:[function(require,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -4512,7 +4844,7 @@ module.exports = {
   deepCopy: deepCopy,
   throttle: throttle
 };
-},{"./vectors":42}],39:[function(require,module,exports){
+},{"./vectors":44}],41:[function(require,module,exports){
 "use strict";
 
 var clamp = function clamp(val, min, max) {
@@ -4557,7 +4889,7 @@ module.exports = {
   clamp: clamp,
   subtractWithDeficit: subtractWithDeficit
 };
-},{}],40:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 'use strict';
 
 function isIpad() {
@@ -4588,7 +4920,7 @@ module.exports = {
   isMobile: isMobile,
   isPhone: isPhone
 };
-},{}],41:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 "use strict";
 
 var floor = Math.floor,
@@ -4643,7 +4975,7 @@ module.exports = {
   oneOf: oneOf,
   weightedOneOf: weightedOneOf
 };
-},{}],42:[function(require,module,exports){
+},{}],44:[function(require,module,exports){
 "use strict";
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -4842,7 +5174,7 @@ module.exports = {
   rotate: rotate,
   abs: abs
 };
-},{}],43:[function(require,module,exports){
+},{}],45:[function(require,module,exports){
 
 module.exports = {
   vectors: require('./bin/vectors'),
@@ -4853,7 +5185,7 @@ module.exports = {
   math: require('./bin/math'),
 }
 
-},{"./bin/gridHelpers":37,"./bin/helpers":38,"./bin/math":39,"./bin/platform":40,"./bin/stochastic":41,"./bin/vectors":42}],44:[function(require,module,exports){
+},{"./bin/gridHelpers":39,"./bin/helpers":40,"./bin/math":41,"./bin/platform":42,"./bin/stochastic":43,"./bin/vectors":44}],46:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -5039,7 +5371,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],45:[function(require,module,exports){
+},{}],47:[function(require,module,exports){
 (function (process){(function (){
 /**
  * @license React
@@ -9994,7 +10326,7 @@ if(/^(https?|file):$/.test(protocol)){// eslint-disable-next-line react-internal
 console.info('%cDownload the React DevTools '+'for a better development experience: '+'https://reactjs.org/link/react-devtools'+(protocol==='file:'?'\nYou might need to use a local HTTP server (instead of file://): '+'https://reactjs.org/link/react-devtools-faq':''),'font-weight:bold');}}}}exports.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED=Internals;exports.createPortal=createPortal$1;exports.createRoot=createRoot$1;exports.findDOMNode=findDOMNode;exports.flushSync=flushSync$1;exports.hydrate=hydrate;exports.hydrateRoot=hydrateRoot$1;exports.render=render;exports.unmountComponentAtNode=unmountComponentAtNode;exports.unstable_batchedUpdates=batchedUpdates$1;exports.unstable_renderSubtreeIntoContainer=renderSubtreeIntoContainer;exports.version=ReactVersion;/* global __REACT_DEVTOOLS_GLOBAL_HOOK__ */if(typeof __REACT_DEVTOOLS_GLOBAL_HOOK__!=='undefined'&&typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop==='function'){__REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop(new Error());}})();}
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":44,"react":51,"scheduler":54}],46:[function(require,module,exports){
+},{"_process":46,"react":53,"scheduler":56}],48:[function(require,module,exports){
 /**
  * @license React
  * react-dom.production.min.js
@@ -10319,7 +10651,7 @@ exports.hydrateRoot=function(a,b,c){if(!ol(a))throw Error(p(405));var d=null!=c&
 e);return new nl(b)};exports.render=function(a,b,c){if(!pl(b))throw Error(p(200));return sl(null,a,b,!1,c)};exports.unmountComponentAtNode=function(a){if(!pl(a))throw Error(p(40));return a._reactRootContainer?(Sk(function(){sl(null,null,a,!1,function(){a._reactRootContainer=null;a[uf]=null})}),!0):!1};exports.unstable_batchedUpdates=Rk;
 exports.unstable_renderSubtreeIntoContainer=function(a,b,c,d){if(!pl(c))throw Error(p(200));if(null==a||void 0===a._reactInternals)throw Error(p(38));return sl(a,b,c,!1,d)};exports.version="18.2.0-next-9e3b772b8-20220608";
 
-},{"react":51,"scheduler":54}],47:[function(require,module,exports){
+},{"react":53,"scheduler":56}],49:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -10348,7 +10680,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":44,"react-dom":48}],48:[function(require,module,exports){
+},{"_process":46,"react-dom":50}],50:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -10390,7 +10722,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"./cjs/react-dom.development.js":45,"./cjs/react-dom.production.min.js":46,"_process":44}],49:[function(require,module,exports){
+},{"./cjs/react-dom.development.js":47,"./cjs/react-dom.production.min.js":48,"_process":46}],51:[function(require,module,exports){
 (function (process){(function (){
 /**
  * @license React
@@ -12795,7 +13127,7 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":44}],50:[function(require,module,exports){
+},{"_process":46}],52:[function(require,module,exports){
 /**
  * @license React
  * react.production.min.js
@@ -12823,7 +13155,7 @@ exports.useCallback=function(a,b){return U.current.useCallback(a,b)};exports.use
 exports.useInsertionEffect=function(a,b){return U.current.useInsertionEffect(a,b)};exports.useLayoutEffect=function(a,b){return U.current.useLayoutEffect(a,b)};exports.useMemo=function(a,b){return U.current.useMemo(a,b)};exports.useReducer=function(a,b,e){return U.current.useReducer(a,b,e)};exports.useRef=function(a){return U.current.useRef(a)};exports.useState=function(a){return U.current.useState(a)};exports.useSyncExternalStore=function(a,b,e){return U.current.useSyncExternalStore(a,b,e)};
 exports.useTransition=function(){return U.current.useTransition()};exports.version="18.2.0";
 
-},{}],51:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -12834,7 +13166,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"./cjs/react.development.js":49,"./cjs/react.production.min.js":50,"_process":44}],52:[function(require,module,exports){
+},{"./cjs/react.development.js":51,"./cjs/react.production.min.js":52,"_process":46}],54:[function(require,module,exports){
 (function (process,setImmediate){(function (){
 /**
  * @license React
@@ -13472,7 +13804,7 @@ if (
 }
 
 }).call(this)}).call(this,require('_process'),require("timers").setImmediate)
-},{"_process":44,"timers":55}],53:[function(require,module,exports){
+},{"_process":46,"timers":57}],55:[function(require,module,exports){
 (function (setImmediate){(function (){
 /**
  * @license React
@@ -13495,7 +13827,7 @@ exports.unstable_scheduleCallback=function(a,b,c){var d=exports.unstable_now();"
 exports.unstable_shouldYield=M;exports.unstable_wrapCallback=function(a){var b=y;return function(){var c=y;y=b;try{return a.apply(this,arguments)}finally{y=c}}};
 
 }).call(this)}).call(this,require("timers").setImmediate)
-},{"timers":55}],54:[function(require,module,exports){
+},{"timers":57}],56:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -13506,7 +13838,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"./cjs/scheduler.development.js":52,"./cjs/scheduler.production.min.js":53,"_process":44}],55:[function(require,module,exports){
+},{"./cjs/scheduler.development.js":54,"./cjs/scheduler.production.min.js":55,"_process":46}],57:[function(require,module,exports){
 (function (setImmediate,clearImmediate){(function (){
 var nextTick = require('process/browser.js').nextTick;
 var apply = Function.prototype.apply;
@@ -13585,4 +13917,4 @@ exports.clearImmediate = typeof clearImmediate === "function" ? clearImmediate :
   delete immediateIds[id];
 };
 }).call(this)}).call(this,require("timers").setImmediate,require("timers").clearImmediate)
-},{"process/browser.js":44,"timers":55}]},{},[6]);
+},{"process/browser.js":46,"timers":57}]},{},[7]);

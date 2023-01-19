@@ -22,15 +22,13 @@ function Game(props) {
   const {state, dispatch, getState} = props;
   const game = state.game;
 
-  // mutliplayer
-  useEffect(() => {
-    setupSocket(dispatch);
-  }, []);
-
+  const [isRotated, setIsRotated] = useState(false);
+  // HACK: I can't figure out how to get the eventHandlers in Board to know about isRotated
+  window.isRotated = isRotated;
 
   const background = useMemo(() => {
     return game.boardType == 'deployment' ? <DeploymentBoard game={game} /> : null;
-  }, [game.boardType, game.legalMoves.length, game.moveHistory.length]);
+  }, [game.boardType, game.legalMoves.length, game.moveHistory.length, isRotated]);
 
   return (
     <div
@@ -42,7 +40,7 @@ function Game(props) {
         flexDirection: 'column',
       }}
     >
-      <TopBar {...props} />
+      <TopBar isRotated={isRotated} setIsRotated={setIsRotated} {...props} />
       <div
         style={{
           display: 'flex',
@@ -55,20 +53,25 @@ function Game(props) {
           background={background}
           pixelSize={config.pixelSize}
           gridSize={game.gridSize}
-          onPieceMove={(id, position) => {
+          onPieceMove={(id, pos) => {
+            const game = getState().game;
+            const position = rotateCoord(pos, game.gridSize);
             dispatch({type: 'MOVE_PIECE', id, position});
             dispatch({type: 'SET_LEGAL_MOVES', legalMoves: []});
           }}
           onMoveCancel={(id) => {
             setTimeout(() => dispatch({type: 'SET_LEGAL_MOVES', legalMoves: []}));
           }}
-          onPiecePickup={(id, position) => {
+          onPiecePickup={(id, pos) => {
             const game = getState().game;
+            const position = rotateCoord(pos, game.gridSize);
             const piece = getPieceByID(game, id);
             dispatch({type: 'SET_LEGAL_MOVES', legalMoves: getLegalMoves(game, piece)});
           }}
-          isMoveAllowed={(id, position) => {
+          isMoveAllowed={(id, pos) => {
             const game = getState().game;
+            console.log("is move allowed", isRotated);
+            const position = rotateCoord(pos, game.gridSize);
             const piece = getPieceByID(game, id);
             const pieceAtPosition = getPieceAtPosition(game, position);
 
@@ -87,6 +90,15 @@ function Game(props) {
   );
 }
 
+const rotateCoord = (pos, size) => {
+  if (!pos) return pos;
+  if (!window.isRotated) return pos;
+  return {
+    x: size.width - pos.x - 1,
+    y: size.height - pos.y - 1
+  };
+};
+
 const DeploymentBoard = (props) => {
   const {game} = props;
   const {legalMoves, boardSize, gridSize, moveHistory} = game;
@@ -99,7 +111,8 @@ const DeploymentBoard = (props) => {
   const moveIndicators = [];
   const squareHeight = config.pixelSize.height / gridSize.height;
   const squareWidth = config.pixelSize.width / gridSize.width;
-  for (const move of legalMoves) {
+  for (const m of legalMoves) {
+    const move = rotateCoord(m, gridSize);
     moveIndicators.push(<div
       key={'move_' + move.x + ',' + move.y}
       style={{
@@ -114,8 +127,8 @@ const DeploymentBoard = (props) => {
     />)
   }
 
-  const move = moveHistory[moveHistory.length - 1]?.position;
-  const prevPos = game.prevPiecePosition;
+  const move = rotateCoord(moveHistory[moveHistory.length - 1]?.position, gridSize);
+  const prevPos = rotateCoord(game.prevPiecePosition, gridSize);
 
   return (
     <div
@@ -165,7 +178,7 @@ const makePiece = (game, piece) => {
   const pxWidth = config.pixelSize.width / game.gridSize.width;
   const pxHeight = config.pixelSize.height / game.gridSize.height;
   const spriteSheet = {pxWidth, pxHeight, imagesAcross: 10, imagesDown: 2};
-  return {...piece, sprite: (
+  return {...piece, position: rotateCoord(piece.position, game.gridSize), sprite: (
     <SpriteSheet src={config.spriteSheet}
       offset={config.pieceToOffset[piece.color + "_" + piece.type]}
       spriteSheet={spriteSheet}

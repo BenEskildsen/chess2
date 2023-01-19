@@ -3,6 +3,11 @@
 
 
 - - - - - FEATURES - - - - -
+  - multiple sessions
+    - client side:
+      - localStorage for clientID (client name)
+    - should be able to run the game entirely out of the session (moves, etc)
+      - move boardToGrid, gridToBoard to selectors
   - Amazon
     - add to spritesheet
     - add to config

@@ -1,10 +1,11 @@
 const React = require('react');
-const {Button, Modal} = require('bens_ui_components');
+const {Button, InfoCard, Modal} = require('bens_ui_components');
 const Game = require('./Game.react');
+const Lobby = require('./Lobby.react');
+const {setupSocket} = require('../clientToServer');
 const {useEnhancedReducer} = require('bens_ui_components');
 const {rootReducer} = require('../reducers/rootReducer');
 const {useEffect, useState, useMemo} = React;
-// const Lobby = require('./Lobby.react');
 
 
 function Main(props) {
@@ -13,9 +14,14 @@ function Main(props) {
   );
   window.getState = getState;
 
+  // mutliplayer
+  useEffect(() => {
+    setupSocket(dispatch);
+  }, []);
+
   let content = null;
   if (state.screen === 'LOBBY') {
-    content = <Lobby dispatch={dispatch} />
+    content = <Lobby dispatch={dispatch} state={getState()} getState={getState} />
   } else if (state.screen === 'GAME') {
     content = <Game dispatch={dispatch} state={getState()} getState={getState} />
   }
@@ -27,30 +33,5 @@ function Main(props) {
     </React.Fragment>
   )
 }
-
-function Lobby(props) {
-  const {dispatch} = props;
-  return (
-    <div
-      style={{
-        width: 300,
-        margin: 'auto',
-        marginTop: 150,
-      }}
-    >
-      <Button
-        label="Play"
-        style={{
-          width: 300,
-          height: 30,
-        }}
-        onClick={() => {
-          dispatch({type: 'START', screen: 'GAME'});
-        }}
-      />
-    </div>
-  );
-}
-
 
 module.exports = Main;
