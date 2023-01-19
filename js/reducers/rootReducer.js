@@ -143,6 +143,7 @@ const deploymentBoard = () => {
       {color: 'white', type: 'knishop', position: {x: 6, y: 11}, id: pieceID++},
       {color: 'white', type: 'camel', position: {x: 7, y: 11}, id: pieceID++},
       {color: 'white', type: 'pawn', position: {x: 8, y: 11}, id: pieceID++},
+      {color: 'white', type: 'amazon', position: {x: 9, y: 11}, id: pieceID++},
 
       {color: 'black', type: 'rook', position: {x: 0, y: 0}, id: pieceID++},
       {color: 'black', type: 'knight', position: {x: 1, y: 0}, id: pieceID++},
@@ -153,6 +154,7 @@ const deploymentBoard = () => {
       {color: 'black', type: 'knishop', position: {x: 6, y: 0}, id: pieceID++},
       {color: 'black', type: 'camel', position: {x: 7, y: 0}, id: pieceID++},
       {color: 'black', type: 'pawn', position: {x: 8, y: 0}, id: pieceID++},
+      {color: 'black', type: 'amazon', position: {x: 9, y: 0}, id: pieceID++},
 
       // {color: 'white', type: 'pawn', position: {x: 2, y: 8}, id: pieceID++},
       // {color: 'white', type: 'pawn', position: {x: 3, y: 8}, id: pieceID++},

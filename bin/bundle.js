@@ -792,6 +792,10 @@ const config = {
       x: 8,
       y: 0
     },
+    'white_amazon': {
+      x: 9,
+      y: 0
+    },
     'black_king': {
       x: 0,
       y: 1
@@ -827,6 +831,10 @@ const config = {
     'black_camel': {
       x: 8,
       y: 1
+    },
+    'black_amazon': {
+      x: 9,
+      y: 1
     }
   },
   pieceToValue: (pieceType, isMinimax) => {
@@ -839,7 +847,8 @@ const config = {
       rook: 5,
       knook: 8,
       knishop: 8,
-      queen: 9
+      queen: 9,
+      amazon: 13
     };
     if (isMinimax && pieceType == 'king') return 1000;
     return vals[pieceType];
@@ -1358,6 +1367,14 @@ const deploymentBoard = () => {
       },
       id: pieceID++
     }, {
+      color: 'white',
+      type: 'amazon',
+      position: {
+        x: 9,
+        y: 11
+      },
+      id: pieceID++
+    }, {
       color: 'black',
       type: 'rook',
       position: {
@@ -1426,6 +1443,14 @@ const deploymentBoard = () => {
       type: 'pawn',
       position: {
         x: 8,
+        y: 0
+      },
+      id: pieceID++
+    }, {
+      color: 'black',
+      type: 'amazon',
+      position: {
+        x: 9,
         y: 0
       },
       id: pieceID++
@@ -2035,6 +2060,9 @@ function getLegalMoves(game, piece) {
     case 'knishop':
       legalMoves = getBishopMoves(game, x, y).concat(getKnightMoves(game, x, y));
       break;
+    case 'amazon':
+      legalMoves = getRookMoves(game, x, y).concat(getBishopMoves(game, x, y)).concat(getKnightMoves(game, x, y));
+      break;
     case 'king':
       legalMoves = [{
         x: x - 1,
@@ -2398,8 +2426,14 @@ const choosePiece = (valueRemaining, placedKing) => {
     case 8:
       possiblePieces = possiblePieces.concat(['knight', 'bishop', 'rook', 'king', 'knishop', 'knook', 'camel']);
       break;
-    default:
+    case 9:
+    case 10:
+    case 11:
+    case 12:
       possiblePieces = possiblePieces.concat(['knight', 'bishop', 'rook', 'king', 'knishop', 'knook', 'queen', 'camel']);
+      break;
+    default:
+      possiblePieces = possiblePieces.concat(['knight', 'bishop', 'rook', 'king', 'knishop', 'knook', 'queen', 'camel', 'amazon']);
       break;
   }
   if (valueRemaining < 14 && !placedKing) {

@@ -92,10 +92,20 @@ const choosePiece = (valueRemaining, placedKing) => {
         'knishop', 'knook', 'camel',
       ]);
       break;
+    case 9:
+    case 10:
+    case 11:
+    case 12:
+      possiblePieces = possiblePieces.concat([
+        'knight', 'bishop', 'rook', 'king',
+        'knishop', 'knook', 'queen', 'camel',
+      ]);
+      break;
     default:
       possiblePieces = possiblePieces.concat([
         'knight', 'bishop', 'rook', 'king',
         'knishop', 'knook', 'queen', 'camel',
+        'amazon',
       ]);
       break;
   }

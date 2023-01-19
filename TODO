@@ -8,20 +8,16 @@
       - localStorage for clientID (client name)
     - should be able to run the game entirely out of the session (moves, etc)
       - move boardToGrid, gridToBoard to selectors
-  - Amazon
-    - add to spritesheet
-    - add to config
-    - add to moves
   - ticker for players joining/leaving
   - right click to highlight a square
     - game state, server state, server action
     - UI of highlighted square on deployment board
-  - allow rotating the board for the black player
+    - need to allow passing arbitrary click handlers down the props chain
 
 
 - - - - - - AI - - - - - - -
   - evaluateBoard function
-    - check, checkmate
+    - check, checkmate, promotion
     - 1 > value per piece per square
   - fails when a player runs out of pieces
   - use a worker
@@ -45,7 +41,5 @@
 
 
 - - - - - - LATER - - - - - - -
-  - right click to highlight squares
-    - need to allow passing arbitrary click handlers down the props chain
   - add visit tracking
   - button to save board state --> go to full size board

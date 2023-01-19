@@ -23,6 +23,7 @@ const config = {
     'white_knook': {x: 6, y: 0},
     'white_knishop': {x: 7, y: 0},
     'white_camel': {x: 8, y: 0},
+    'white_amazon': {x: 9, y: 0},
 
     'black_king': {x: 0, y: 1},
     'black_queen': {x: 1, y: 1},
@@ -33,6 +34,7 @@ const config = {
     'black_knook': {x: 6, y: 1},
     'black_knishop': {x: 7, y: 1},
     'black_camel': {x: 8, y: 1},
+    'black_amazon': {x: 9, y: 1},
   },
 
   pieceToValue: (pieceType, isMinimax) => {
@@ -46,6 +48,7 @@ const config = {
       knook: 8,
       knishop: 8,
       queen: 9,
+      amazon: 13,
     };
     if (isMinimax && pieceType == 'king') return 1000;
     return vals[pieceType];

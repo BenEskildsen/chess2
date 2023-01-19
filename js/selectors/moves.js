@@ -104,6 +104,11 @@ function getLegalMoves(game, piece) {
       legalMoves = getBishopMoves(game, x, y)
         .concat(getKnightMoves(game, x, y));
       break;
+    case 'amazon':
+      legalMoves = getRookMoves(game, x, y)
+        .concat(getBishopMoves(game, x, y))
+        .concat(getKnightMoves(game, x, y));
+      break;
     case 'king':
       legalMoves = [
         {x: x - 1, y: y - 1}, {x: x, y: y - 1}, {x: x + 1, y: y - 1}, {x: x - 1, y: y},
