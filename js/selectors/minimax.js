@@ -72,6 +72,7 @@ const evaluate = (game) => {
   let whiteActivity = 0;
   let blackActivity = 0;
   for (const piece of game.pieces) {
+    if (!insideBoard(game, piece.position)) continue;
     if (piece.color == 'white') {
       whiteActivity += config.pieceToLocationValue(piece) / 100;
     }

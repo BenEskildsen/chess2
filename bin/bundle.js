@@ -770,7 +770,7 @@ module.exports = {
   setupSocket
 };
 },{"./config":6}],6:[function(require,module,exports){
-const isLocalHost = false;
+const isLocalHost = true;
 const values = {
   pawn: {
     '00': 8,
@@ -1550,6 +1550,7 @@ const config = {
     const x = color == 'white' ? position.x - 2 : 7 - (position.x - 2);
     const y = color == 'white' ? position.y - 2 : 7 - (position.y - 2);
     const key = '' + x + '' + y;
+    console.log(key);
     const score = (_values$type = values[type]) === null || _values$type === void 0 ? void 0 : _values$type[key];
     return score || 0;
   }
@@ -2590,6 +2591,7 @@ const evaluate = game => {
   let whiteActivity = 0;
   let blackActivity = 0;
   for (const piece of game.pieces) {
+    if (!insideBoard(game, piece.position)) continue;
     if (piece.color == 'white') {
       whiteActivity += config.pieceToLocationValue(piece) / 100;
     }
