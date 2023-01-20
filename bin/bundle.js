@@ -770,7 +770,7 @@ module.exports = {
   setupSocket
 };
 },{"./config":6}],6:[function(require,module,exports){
-const isLocalHost = true;
+const isLocalHost = false;
 const values = {
   pawn: {
     '00': 8,
@@ -857,18 +857,18 @@ const values = {
     '71': 2,
     '02': 2,
     '12': 2,
-    '22': 9,
-    '32': 9,
-    '42': 9,
-    '52': 9,
+    '22': 8,
+    '32': 8,
+    '42': 8,
+    '52': 8,
     '62': 2,
     '72': 2,
     '03': 2,
     '13': 2,
-    '23': 9,
-    '33': 9,
-    '43': 9,
-    '53': 9,
+    '23': 8,
+    '33': 8,
+    '43': 8,
+    '53': 8,
     '63': 2,
     '73': 2,
     '04': 2,
@@ -1093,14 +1093,14 @@ const values = {
     '56': 0,
     '66': 0,
     '76': 0,
-    '07': 9,
-    '17': 9,
-    '27': 9,
-    '37': 9,
-    '47': 9,
-    '57': 9,
-    '67': 9,
-    '77': 9
+    '07': 7,
+    '17': 7,
+    '27': 7,
+    '37': 7,
+    '47': 7,
+    '57': 7,
+    '67': 7,
+    '77': 7
   },
   rook: {
     '00': 0,
@@ -1550,7 +1550,6 @@ const config = {
     const x = color == 'white' ? position.x - 2 : 7 - (position.x - 2);
     const y = color == 'white' ? position.y - 2 : 7 - (position.y - 2);
     const key = '' + x + '' + y;
-    console.log(key);
     const score = (_values$type = values[type]) === null || _values$type === void 0 ? void 0 : _values$type[key];
     return score || 0;
   }
@@ -6713,12 +6712,6 @@ const {
   useReducer
 } = React;
 
-/*
- * TODO
- *  - call a function to move a piece
- *  - call a function to add/remove pieces
- */
-
 /**
  *  Props:
  *    - pixelSize: {width, height}, // board size in pixels
@@ -7463,7 +7456,10 @@ function Modal(props) {
       alignItems: 'center',
       justifyContent: 'center',
       width: '100%',
-      height: '100%'
+      height: '100%',
+      top: 0,
+      left: 0,
+      zIndex: 10
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
