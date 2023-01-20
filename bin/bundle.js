@@ -1590,10 +1590,10 @@ const axiosInstance = _axios.default.create({
 });
 const postVisit = (path, map) => {
   if (config.isLocalHost) return;
-  const isUnique = !!!localStorage.getItem('isRevisit');
-  localStorage.setItem('isRevisit', true);
+  const isUnique = !!!localStorage.getItem('isRevisit_' + path);
+  localStorage.setItem('isRevisit_' + path, true);
   return axiosInstance.post('/visit', {
-    hostname: getHostname(),
+    hostname: 'chess2',
     path,
     isUnique,
     map
@@ -6711,6 +6711,12 @@ const {
   useReducer
 } = React;
 
+/*
+ * TODO
+ *  - call a function to move a piece
+ *  - call a function to add/remove pieces
+ */
+
 /**
  *  Props:
  *    - pixelSize: {width, height}, // board size in pixels
@@ -7455,10 +7461,7 @@ function Modal(props) {
       alignItems: 'center',
       justifyContent: 'center',
       width: '100%',
-      height: '100%',
-      top: 0,
-      left: 0,
-      zIndex: 10
+      height: '100%'
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {

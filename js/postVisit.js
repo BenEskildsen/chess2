@@ -12,11 +12,11 @@ const axiosInstance = axios.create({
 const postVisit = (path, map) => {
   if (config.isLocalHost) return;
 
-  const isUnique = !!!localStorage.getItem('isRevisit');
-  localStorage.setItem('isRevisit', true);
+  const isUnique = !!!localStorage.getItem('isRevisit_' + path);
+  localStorage.setItem('isRevisit_' + path, true);
   return axiosInstance
     .post('/visit', {
-      hostname: getHostname(), path, isUnique, map,
+      hostname: 'chess2', path, isUnique, map,
     })
 };
 
