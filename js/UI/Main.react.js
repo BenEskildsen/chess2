@@ -5,6 +5,7 @@ const Lobby = require('./Lobby.react');
 const {setupSocket} = require('../clientToServer');
 const {useEnhancedReducer} = require('bens_ui_components');
 const {rootReducer} = require('../reducers/rootReducer');
+import postVisit from '../postVisit';
 const {useEffect, useState, useMemo} = React;
 
 
@@ -14,8 +15,8 @@ function Main(props) {
   );
   window.getState = getState;
 
-  // mutliplayer
   useEffect(() => {
+    postVisit('/index', 'GET');
     setupSocket(dispatch);
   }, []);
 

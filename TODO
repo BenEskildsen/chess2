@@ -1,5 +1,6 @@
 
 - - - - - PLAYTEST - - - - - -
+  - server can crash
 
 
 - - - - - FEATURES - - - - -
@@ -18,7 +19,6 @@
 - - - - - - AI - - - - - - -
   - evaluateBoard function
     - check, checkmate, promotion
-    - 1 > value per piece per square
   - fails when a player runs out of pieces
   - use a worker
     - update make file to compile the worker
@@ -41,5 +41,4 @@
 
 
 - - - - - - LATER - - - - - - -
-  - add visit tracking
   - button to save board state --> go to full size board

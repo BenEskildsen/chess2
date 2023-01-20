@@ -34,7 +34,7 @@ const initIO = (io) => {
     const {sessions, socketClients, clientToSession} = state;
     // TODO: client should be able to store ID in localStorage and
     // update server with it
-    const clientID = nextClientID;
+    const clientID = nextClientID++;
     console.log("client connect", clientID);
 
     // on client connect
@@ -68,6 +68,7 @@ const initIO = (io) => {
         case 'JOIN_SESSION': {
           const {sessionID} = action;
           const session = sessions[sessionID];
+          if (!session) break;
 
           session.clients.push(clientID);
           clientToSession[clientID] = session.id;
@@ -104,6 +105,7 @@ const initIO = (io) => {
         // GAME
         case 'START': {
           const session = sessions[clientToSession[clientID]];
+          if (!session) break;
           session.moveHistory = [];
           emitToSession(session, socketClients, action, clientID);
           break;
@@ -111,18 +113,24 @@ const initIO = (io) => {
         case 'CREATE_PIECE':
         case 'MOVE_PIECE': {
           const session = sessions[clientToSession[clientID]];
+          if (!session) break;
           session.moveHistory.push(action);
           emitToSession(session, socketClients, action, clientID);
           break;
         }
         case 'UNDO': {
           const session = sessions[clientToSession[clientID]];
+          if (!session) {
+            console.log("no session", clientID, clientToSession[clientID], sessions);
+            break;
+          }
           session.moveHistory.pop();
           emitToSession(session, socketClients, action, clientID);
           break;
         }
         case 'SET_USE_MOVE_RULES': {
           const session = sessions[clientToSession[clientID]];
+          if (!session) break;
           const {useMoveRules} = action;
           session.useMoveRules = useMoveRules;
           emitToSession(session, socketClients, action, clientID);
@@ -130,6 +138,7 @@ const initIO = (io) => {
         }
         default:
           const session = sessions[clientToSession[clientID]];
+          if (!session) break;
           emitToSession(session, socketClients, action, clientID);
       }
     });
@@ -138,8 +147,6 @@ const initIO = (io) => {
       console.log("user disconnected");
       leaveSession(state, clientID);
     });
-
-    nextClientID++;
   });
 }
 

@@ -16,11 +16,16 @@ const {
 const {dispatchToServer, setupSocket} = require('../clientToServer');
 const {config} = require('../config');
 const {deployPawns} = require('../thunks/deployPieces');
+import postVisit from '../postVisit';
 const {useState, useMemo, useEffect, useReducer} = React;
 
 function Game(props) {
   const {state, dispatch, getState} = props;
   const game = state.game;
+
+  useEffect(() => {
+    postVisit('/game', 'GET');
+  }, []);
 
   const [isRotated, setIsRotated] = useState(false);
   // HACK: I can't figure out how to get the eventHandlers in Board to know about isRotated
@@ -70,7 +75,6 @@ function Game(props) {
           }}
           isMoveAllowed={(id, pos) => {
             const game = getState().game;
-            console.log("is move allowed", isRotated);
             const position = rotateCoord(pos, game.gridSize);
             const piece = getPieceByID(game, id);
             const pieceAtPosition = getPieceAtPosition(game, position);

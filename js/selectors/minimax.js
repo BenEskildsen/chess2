@@ -1,6 +1,7 @@
 const {getPieceAtPosition, getPieceByID} = require('./selectors');
 const {getLegalMoves, insideBoard} = require('./moves');
 const {deepCopy} = require('bens_utils').helpers;
+const {config} = require('../config');
 const {gameReducer} = require('../reducers/gameReducer');
 
 window.positionsEvaluated = 0;
@@ -60,6 +61,7 @@ function minimax(game, depth, alpha, beta, isMaximizingPlayer) {
 }
 
 const evaluate = (game) => {
+  const color = getColorOfNextMove(game);
   let score = 0;
   // lost:
 
@@ -67,6 +69,18 @@ const evaluate = (game) => {
   score += game.colorValues.white - game.colorValues.black;
 
   // activity:
+  let whiteActivity = 0;
+  let blackActivity = 0;
+  for (const piece of game.pieces) {
+    if (piece.color == 'white') {
+      whiteActivity += config.pieceToLocationValue(piece) / 100;
+    }
+    if (piece.color == 'black') {
+      blackActivity += config.pieceToLocationValue(piece) / 100;
+    }
+  }
+
+  score += whiteActivity - blackActivity;
 
   return score;
 };
