@@ -1,0 +1,14 @@
+
+To run locally:
+  - make sure the socket.io script in index.html looks like:
+    <script src="/socket.io/socket.io.js"></script>
+    (no leading /chess2/...)
+  - make sure the first line of js/config.js is:
+    const isLocalHost = true;
+  - Start the server:
+    > npm start
+
+To run after making changes:
+  > npm install
+  > ./make
+  > npm start

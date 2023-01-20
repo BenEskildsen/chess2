@@ -770,7 +770,7 @@ module.exports = {
   setupSocket
 };
 },{"./config":6}],6:[function(require,module,exports){
-const isLocalHost = false;
+const isLocalHost = true;
 const values = {
   pawn: {
     '00': 8,
