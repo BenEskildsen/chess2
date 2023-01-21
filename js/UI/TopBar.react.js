@@ -4,6 +4,7 @@ const {oneOf} = require('bens_utils').stochastic;
 const {deepCopy} = require('bens_utils').helpers;
 const {
   Button, InfoCard, Divider,
+  Checkbox,
   Plot, plotReducer,
   Modal, Indicator,
   Board, SpriteSheet,
@@ -62,35 +63,13 @@ const TopBar = (props) => {
             dispatchToServer(action);
           }}
         />
-        <Button
-          label="AI Move"
-          style={{height: 50}}
-          onClick={() => {
-            // random move:
-            // const moves = possibleMoves(game, []);
-            // dispatch(oneOf(moves));
-
-            const startTime = Date.now();
-            const {score, move} = minimax(deepCopy(game), 4, -Infinity, Infinity,
-              getColorOfNextMove(game) == 'white',
-            );
-            // console.log(score, move);
-            const totalTime = Date.now() - startTime;
-            console.log(
-              "positions evaluated", window.positionsEvaluated,
-              "in " + (totalTime / 1000).toFixed(3) + " seconds"
-            );
-            window.positionsEvaluated = 0;
-            dispatch({...move, isMinimax: false});
-          }}
-        />
         <div>
           &nbsp; White Score: {game.colorValues['white']}
         </div><div>
           &nbsp; Black Score: {game.colorValues['black']}
         </div>
       </div>
-      <DeploymentBar {...props} />
+      <DeploymentAndAIBar {...props} />
     </div>
   );
 }
@@ -172,12 +151,11 @@ const OptionsModal = (props) => {
   />;
 }
 
-const DeploymentBar = (props) => {
+const DeploymentAndAIBar = (props) => {
   const {state, getState, dispatch} = props;
   const {game} = state;
 
-  const [showDeployment, setShowDeployment] = useState(false);
-  const [value, setValue] = useState(43);
+  const [showRow, setShowRow] = useState(null);
 
   return (
     <div
@@ -185,16 +163,100 @@ const DeploymentBar = (props) => {
         display: 'flex',
       }}
     >
+      {showRow == null || showRow == 'deployment' ?
+        (<Button
+          label={showRow == 'deployment' ? '<' : '> Deployment'}
+          style={{height: 50}}
+          onClick={() => {
+            if (showRow == 'deployment') {
+              setShowRow(null);
+            } else {
+              setShowRow('deployment');
+            }
+          }}
+        />) : null
+      }
+      {showRow == null || showRow == 'AI' ?
+        (<Button
+          label={showRow == 'AI' ? '<' : '> AI'}
+          style={{height: 50}}
+          onClick={() => {
+            if (showRow == 'AI') {
+              setShowRow(null);
+            } else {
+              setShowRow('AI');
+            }
+          }}
+        />) : null
+      }
+      <AIRow {...props} shouldShow={showRow == 'AI'} />
+      <DeploymentRow {...props} shouldShow={showRow == 'deployment'} />
+    </div>
+  );
+}
+
+
+const AIRow = (props ) => {
+  const {state, getState, dispatch, shouldShow} = props;
+  const {game} = state;
+
+  return (
+    <div
+      style={{
+        display: shouldShow ? 'inline-block' : 'none',
+      }}
+    >
       <Button
-        label={showDeployment ? '<' : '>'}
+        label="AI Move"
         style={{height: 50}}
-        onClick={() => setShowDeployment(!showDeployment)}
-      />
-      <div
-        style={{
-          display: showDeployment ? 'inline-block' : 'none',
+        onClick={() => {
+          // random move:
+          // const moves = possibleMoves(game, []);
+          // dispatch(oneOf(moves));
+
+          const startTime = Date.now();
+          const {score, move, continuation} = minimax(deepCopy(game),
+            game.aiDepth, -Infinity, Infinity,
+            getColorOfNextMove(game) == 'white',
+          );
+          // console.log(score, move);
+          const totalTime = Date.now() - startTime;
+          console.log(
+            "positions evaluated", window.positionsEvaluated,
+            "in " + (totalTime / 1000).toFixed(3) + " seconds"
+          );
+          // console.log('continuation', continuation);
+          window.positionsEvaluated = 0;
+          dispatch({...move, isMinimax: false});
         }}
-      >
+      />
+      <Checkbox
+        label="&nbsp;"
+        checked={game.aiUseActivity}
+        onChange={(checked) => {
+          dispatch({type: 'SET', aiUseActivity: checked});
+        }}
+      />
+      Evaluate based on activity.
+      <Slider
+        min={1} max={5}
+        value={game.aiDepth} onChange={v => dispatch({type: 'SET', aiDepth: v})}
+        label="&nbsp;Search Depth"
+      />
+    </div>
+  );
+}
+
+const DeploymentRow = (props) => {
+  const {state, getState, dispatch, shouldShow} = props;
+  const {game} = state;
+  const [value, setValue] = useState(43);
+  return (
+    <div
+      style={{
+        display: shouldShow ? 'inline-block' : 'none',
+      }}
+    >
       <Button
         label="Pawns"
         style={{height: 50}}
@@ -239,9 +301,8 @@ const DeploymentBar = (props) => {
         value={value} onChange={setValue}
         label="Total Allowed Piece Value Per Side"
       />
-      </div>
     </div>
-  );
+  )
 }
 
 module.exports = TopBar;

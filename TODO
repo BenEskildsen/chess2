@@ -20,7 +20,7 @@
   - evaluateBoard function
     - check, checkmate, promotion
   - fails when a player runs out of pieces
-  - use a worker
+  - use a worker for the AI
     - update make file to compile the worker
     - worker file maintaining its own game state
     - send message to worker on moves
@@ -28,6 +28,7 @@
   - AI bar
     - button to auto-play AI moves with certain delay (for one/boths sides)
     - search depth
+    - fuzziness so that more moves can be selected
 
 
 - - - - - FIX - - - - - -

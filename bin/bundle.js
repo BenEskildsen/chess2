@@ -421,6 +421,7 @@ const {
   Button,
   InfoCard,
   Divider,
+  Checkbox,
   Plot,
   plotReducer,
   Modal,
@@ -510,31 +511,7 @@ const TopBar = props => {
       dispatch(action);
       dispatchToServer(action);
     }
-  }), /*#__PURE__*/React.createElement(Button, {
-    label: "AI Move",
-    style: {
-      height: 50
-    },
-    onClick: () => {
-      // random move:
-      // const moves = possibleMoves(game, []);
-      // dispatch(oneOf(moves));
-
-      const startTime = Date.now();
-      const {
-        score,
-        move
-      } = minimax(deepCopy(game), 4, -Infinity, Infinity, getColorOfNextMove(game) == 'white');
-      // console.log(score, move);
-      const totalTime = Date.now() - startTime;
-      console.log("positions evaluated", window.positionsEvaluated, "in " + (totalTime / 1000).toFixed(3) + " seconds");
-      window.positionsEvaluated = 0;
-      dispatch({
-        ...move,
-        isMinimax: false
-      });
-    }
-  }), /*#__PURE__*/React.createElement("div", null, "\xA0 White Score: ", game.colorValues['white']), /*#__PURE__*/React.createElement("div", null, "\xA0 Black Score: ", game.colorValues['black'])), /*#__PURE__*/React.createElement(DeploymentBar, props));
+  }), /*#__PURE__*/React.createElement("div", null, "\xA0 White Score: ", game.colorValues['white']), /*#__PURE__*/React.createElement("div", null, "\xA0 Black Score: ", game.colorValues['black'])), /*#__PURE__*/React.createElement(DeploymentAndAIBar, props));
 };
 const OptionsModal = props => {
   const {
@@ -661,7 +638,7 @@ const OptionsModal = props => {
     buttons: []
   });
 };
-const DeploymentBar = props => {
+const DeploymentAndAIBar = props => {
   const {
     state,
     getState,
@@ -670,21 +647,115 @@ const DeploymentBar = props => {
   const {
     game
   } = state;
-  const [showDeployment, setShowDeployment] = useState(false);
-  const [value, setValue] = useState(43);
+  const [showRow, setShowRow] = useState(null);
   return /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex'
     }
-  }, /*#__PURE__*/React.createElement(Button, {
-    label: showDeployment ? '<' : '>',
+  }, showRow == null || showRow == 'deployment' ? /*#__PURE__*/React.createElement(Button, {
+    label: showRow == 'deployment' ? '<' : '> Deployment',
     style: {
       height: 50
     },
-    onClick: () => setShowDeployment(!showDeployment)
-  }), /*#__PURE__*/React.createElement("div", {
+    onClick: () => {
+      if (showRow == 'deployment') {
+        setShowRow(null);
+      } else {
+        setShowRow('deployment');
+      }
+    }
+  }) : null, showRow == null || showRow == 'AI' ? /*#__PURE__*/React.createElement(Button, {
+    label: showRow == 'AI' ? '<' : '> AI',
     style: {
-      display: showDeployment ? 'inline-block' : 'none'
+      height: 50
+    },
+    onClick: () => {
+      if (showRow == 'AI') {
+        setShowRow(null);
+      } else {
+        setShowRow('AI');
+      }
+    }
+  }) : null, /*#__PURE__*/React.createElement(AIRow, _extends({}, props, {
+    shouldShow: showRow == 'AI'
+  })), /*#__PURE__*/React.createElement(DeploymentRow, _extends({}, props, {
+    shouldShow: showRow == 'deployment'
+  })));
+};
+const AIRow = props => {
+  const {
+    state,
+    getState,
+    dispatch,
+    shouldShow
+  } = props;
+  const {
+    game
+  } = state;
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: shouldShow ? 'inline-block' : 'none'
+    }
+  }, /*#__PURE__*/React.createElement(Button, {
+    label: "AI Move",
+    style: {
+      height: 50
+    },
+    onClick: () => {
+      // random move:
+      // const moves = possibleMoves(game, []);
+      // dispatch(oneOf(moves));
+
+      const startTime = Date.now();
+      const {
+        score,
+        move,
+        continuation
+      } = minimax(deepCopy(game), game.aiDepth, -Infinity, Infinity, getColorOfNextMove(game) == 'white');
+      // console.log(score, move);
+      const totalTime = Date.now() - startTime;
+      console.log("positions evaluated", window.positionsEvaluated, "in " + (totalTime / 1000).toFixed(3) + " seconds");
+      // console.log('continuation', continuation);
+      window.positionsEvaluated = 0;
+      dispatch({
+        ...move,
+        isMinimax: false
+      });
+    }
+  }), /*#__PURE__*/React.createElement(Checkbox, {
+    label: "\xA0",
+    checked: game.aiUseActivity,
+    onChange: checked => {
+      dispatch({
+        type: 'SET',
+        aiUseActivity: checked
+      });
+    }
+  }), "Evaluate based on activity.", /*#__PURE__*/React.createElement(Slider, {
+    min: 1,
+    max: 5,
+    value: game.aiDepth,
+    onChange: v => dispatch({
+      type: 'SET',
+      aiDepth: v
+    }),
+    label: "\xA0Search Depth"
+  }));
+};
+const DeploymentRow = props => {
+  const {
+    state,
+    getState,
+    dispatch,
+    shouldShow
+  } = props;
+  const {
+    game
+  } = state;
+  const [value, setValue] = useState(43);
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: shouldShow ? 'inline-block' : 'none'
     }
   }, /*#__PURE__*/React.createElement(Button, {
     label: "Pawns",
@@ -736,7 +807,7 @@ const DeploymentBar = props => {
     value: value,
     onChange: setValue,
     label: "Total Allowed Piece Value Per Side"
-  })));
+  }));
 };
 module.exports = TopBar;
 },{"../clientToServer":5,"../config":6,"../selectors/minimax":12,"../selectors/moves":13,"../selectors/selectors":14,"../selectors/sessions":15,"../thunks/deployPieces":16,"bens_ui_components":83,"bens_utils":90,"react":101}],5:[function(require,module,exports){
@@ -778,7 +849,7 @@ const values = {
     '20': 8,
     '30': 8,
     '40': 8,
-    '50': 8,
+    '50': 7,
     '60': 8,
     '70': 8,
     '01': 7,
@@ -786,7 +857,7 @@ const values = {
     '21': 7,
     '31': 7,
     '41': 7,
-    '51': 7,
+    '51': 6,
     '61': 7,
     '71': 7,
     '02': 6,
@@ -794,7 +865,7 @@ const values = {
     '22': 6,
     '32': 6,
     '42': 6,
-    '52': 6,
+    '52': 5,
     '62': 6,
     '72': 6,
     '03': 5,
@@ -802,25 +873,25 @@ const values = {
     '23': 5,
     '33': 5,
     '43': 5,
-    '53': 5,
+    '53': 4,
     '63': 5,
     '73': 5,
-    '04': 5,
-    '14': 5,
+    '04': 2,
+    '14': 1,
     '24': 5,
-    '34': 9,
-    '44': 9,
-    '54': 5,
-    '64': 5,
-    '74': 5,
-    '05': 3,
+    '34': 10,
+    '44': 10,
+    '54': 1,
+    '64': 1,
+    '74': 2,
+    '05': 1,
     '15': 3,
     '25': 3,
     '35': 3,
     '45': 3,
-    '55': 3,
+    '55': 1,
     '65': 3,
-    '75': 3,
+    '75': 1,
     '06': 1,
     '16': 1,
     '26': 1,
@@ -839,70 +910,70 @@ const values = {
     '77': 0
   },
   knight: {
-    '00': 2,
-    '10': 2,
-    '20': 2,
-    '30': 2,
-    '40': 2,
-    '50': 2,
-    '60': 2,
-    '70': 2,
-    '01': 2,
+    '00': 0,
+    '10': 0,
+    '20': 0,
+    '30': 0,
+    '40': 0,
+    '50': 0,
+    '60': 0,
+    '70': 0,
+    '01': 0,
     '11': 2,
     '21': 2,
     '31': 2,
     '41': 2,
     '51': 2,
     '61': 2,
-    '71': 2,
-    '02': 2,
+    '71': 0,
+    '02': 0,
     '12': 2,
-    '22': 8,
-    '32': 8,
-    '42': 8,
-    '52': 8,
+    '22': 6,
+    '32': 6,
+    '42': 6,
+    '52': 6,
     '62': 2,
-    '72': 2,
-    '03': 2,
+    '72': 0,
+    '03': 0,
     '13': 2,
-    '23': 8,
-    '33': 8,
-    '43': 8,
-    '53': 8,
+    '23': 6,
+    '33': 6,
+    '43': 6,
+    '53': 6,
     '63': 2,
-    '73': 2,
-    '04': 2,
+    '73': 0,
+    '04': 0,
     '14': 2,
-    '24': 9,
-    '34': 9,
-    '44': 9,
-    '54': 9,
+    '24': 8,
+    '34': 8,
+    '44': 8,
+    '54': 8,
     '64': 2,
-    '74': 2,
-    '05': 2,
+    '74': 0,
+    '05': 0,
     '15': 2,
-    '25': 9,
-    '35': 9,
-    '45': 9,
-    '55': 9,
+    '25': 7,
+    '35': 8,
+    '45': 8,
+    '55': 7,
     '65': 2,
-    '75': 2,
-    '06': 2,
+    '75': 0,
+    '06': 0,
     '16': 2,
     '26': 2,
     '36': 2,
     '46': 2,
     '56': 2,
     '66': 2,
-    '76': 2,
-    '07': 2,
+    '76': 0,
+    '07': 0,
     '17': 2,
-    '27': 2,
-    '37': 2,
-    '47': 2,
-    '57': 2,
+    '27': 0,
+    '37': 0,
+    '47': 0,
+    '57': 0,
     '67': 2,
-    '77': 2
+    '77': 0
   },
   bishop: {
     '00': 2,
@@ -945,28 +1016,28 @@ const values = {
     '54': 8,
     '64': 8,
     '74': 8,
-    '05': 2,
+    '05': 0,
     '15': 8,
-    '25': 8,
+    '25': 4,
     '35': 8,
     '45': 8,
-    '55': 8,
+    '55': 4,
     '65': 8,
-    '75': 2,
+    '75': 0,
     '06': 8,
-    '16': 8,
+    '16': 9,
     '26': 8,
     '36': 8,
     '46': 8,
     '56': 8,
-    '66': 8,
+    '66': 9,
     '76': 8,
     '07': 8,
     '17': 8,
-    '27': 8,
+    '27': 0,
     '37': 8,
     '47': 8,
-    '57': 8,
+    '57': 0,
     '67': 8,
     '77': 8
   },
@@ -1275,21 +1346,21 @@ const values = {
     '54': 8,
     '64': 8,
     '74': 8,
-    '05': 8,
+    '05': 0,
     '15': 8,
     '25': 8,
     '35': 8,
     '45': 8,
     '55': 8,
     '65': 8,
-    '75': 8,
+    '75': 0,
     '06': 8,
-    '16': 8,
+    '16': 9,
     '26': 8,
     '36': 8,
     '46': 8,
     '56': 8,
-    '66': 8,
+    '66': 9,
     '76': 8,
     '07': 8,
     '17': 8,
@@ -1554,6 +1625,7 @@ const config = {
     return score || 0;
   }
 };
+window.config = config;
 module.exports = {
   config
 };
@@ -2001,7 +2073,11 @@ const initGameState = () => {
       black: 0,
       white: 0
     },
-    useMoveRules: true
+    useMoveRules: true,
+    aiDepth: 4,
+    aiUseActivity: true,
+    aiFuzzing: 0,
+    automaticallyPlayAs: null
   };
   return game;
 };
@@ -2515,7 +2591,11 @@ function minimax(game, depth, alpha, beta, isMaximizingPlayer) {
     window.positionsEvaluated++;
     return {
       score: evaluate(game),
-      move: game.moveHistory[game.moveHistory.length - 1]
+      move: game.moveHistory[game.moveHistory.length - 1],
+      continuation: null
+      // continuation: game.moveHistory.slice(
+      //   game.moveHistory.length - game.aiDepth, game.moveHistory.length,
+      // ).map(m => (deepCopy({...m, ...getPieceByID(game, m.id)}))),
     };
   }
   // let tabs = "\t".repeat(4-depth);
@@ -2523,6 +2603,7 @@ function minimax(game, depth, alpha, beta, isMaximizingPlayer) {
   if (isMaximizingPlayer) {
     let bestValue = -Infinity;
     let bestMove = null;
+    let continuation = null;
     for (let move of possibleMoves(game)) {
       // let gameCopy = applyMoves(game, [move]);
       game = gameReducer(game, move);
@@ -2531,8 +2612,10 @@ function minimax(game, depth, alpha, beta, isMaximizingPlayer) {
       if (result.score > bestValue) {
         bestValue = result.score;
         bestMove = move;
+        continuation = result.continuation;
       } else if (result.score == bestValue && Math.random() < 0.1) {
         bestMove = move;
+        continuation = result.continuation;
       }
       alpha = Math.max(alpha, bestValue);
       game = gameReducer(game, {
@@ -2546,11 +2629,13 @@ function minimax(game, depth, alpha, beta, isMaximizingPlayer) {
     }
     return {
       score: bestValue,
-      move: bestMove
+      move: bestMove,
+      continuation
     };
   } else {
     let bestValue = Infinity;
     let bestMove = null;
+    let continuation = null;
     for (let move of possibleMoves(game)) {
       // let gameCopy = applyMoves(game, [move]);
       game = gameReducer(game, move);
@@ -2559,8 +2644,10 @@ function minimax(game, depth, alpha, beta, isMaximizingPlayer) {
       if (result.score < bestValue) {
         bestValue = result.score;
         bestMove = move;
+        continuation = result.continuation;
       } else if (result.score == bestValue && Math.random() < 0.1) {
         bestMove = move;
+        continuation = result.continuation;
       }
       beta = Math.min(beta, bestValue);
       game = gameReducer(game, {
@@ -2574,7 +2661,8 @@ function minimax(game, depth, alpha, beta, isMaximizingPlayer) {
     }
     return {
       score: bestValue,
-      move: bestMove
+      move: bestMove,
+      continuation
     };
   }
 }
@@ -2587,18 +2675,21 @@ const evaluate = game => {
   score += game.colorValues.white - game.colorValues.black;
 
   // activity:
-  let whiteActivity = 0;
-  let blackActivity = 0;
-  for (const piece of game.pieces) {
-    if (!insideBoard(game, piece.position)) continue;
-    if (piece.color == 'white') {
-      whiteActivity += config.pieceToLocationValue(piece) / 100;
+  if (game.aiUseActivity) {
+    let whiteActivity = 0;
+    let blackActivity = 0;
+    for (const piece of game.pieces) {
+      if (!insideBoard(game, piece.position)) continue;
+      if (piece.color != color) continue;
+      if (piece.color == 'white') {
+        whiteActivity += config.pieceToLocationValue(piece) / 100;
+      }
+      if (piece.color == 'black') {
+        blackActivity += config.pieceToLocationValue(piece) / 100;
+      }
     }
-    if (piece.color == 'black') {
-      blackActivity += config.pieceToLocationValue(piece) / 100;
-    }
+    score += whiteActivity - blackActivity;
   }
-  score += whiteActivity - blackActivity;
   return score;
 };
 const isGameOver = game => {
@@ -2640,6 +2731,8 @@ const getColorOfNextMove = game => {
   }
   return color;
 };
+window.evaluate = evaluate;
+window.possibleMoves = possibleMoves;
 module.exports = {
   minimax,
   possibleMoves,

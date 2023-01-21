@@ -5,10 +5,11 @@ To run locally:
     (no leading /chess2/...)
   - make sure the first line of js/config.js is:
     const isLocalHost = true;
+  - if you had to make changes then see below before running...
   - Start the server:
     > npm start
 
 To run after making changes:
   > npm install
-  > ./make
+  > npm run build
   > npm start
